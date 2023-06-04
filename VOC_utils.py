@@ -57,9 +57,9 @@ class VOCUtils():
 
         coors = ['xmin', 'ymin', 'xmax', 'ymax']
 
-        bboxes      = []
-        labels      = []
-        difficults  = []
+        bboxes        = []
+        labels        = []
+        difficulties  = []
 
         for obj in root.iter('object'):
             # Tên của obj trong box
@@ -68,7 +68,7 @@ class VOCUtils():
 
             # Độ khó 
             difficult = int(obj.find('difficult').text)
-            difficults.append(difficult)
+            difficulties.append(difficult)
 
             # Toạ độ
             bnd = obj.find("bndbox")
@@ -77,5 +77,5 @@ class VOCUtils():
                 box.append(int(bnd.find(coor).text) - 1)
             bboxes.append(box)
 
-        return np.array(bboxes), np.array(labels), np.array(difficults)
+        return np.array(bboxes), np.array(labels), np.array(difficulties)
 
