@@ -16,7 +16,7 @@ def photometric_distort(image):
 
     """
     
-    new_image = image.clone()
+    new_image = image
 
     distortions = [
         FT.adjust_brightness,
@@ -31,7 +31,7 @@ def photometric_distort(image):
         if random.random() < 0.5 : 
             if manip.__name__ == 'adjust_hue':
                 # Caffe repo sử dụng hue delta = 18, ta chia cho 255 bởi vì Pytorch cần giá trị chuẩn hóa
-                adjust_factor = random.uniform(-18/255., 18/255)
+                adjust_factor = random.uniform(-18/255., 18/255.)
 
             else:
                 #Caffe repo sử dụng 'lower' và 'upper' là 0.5 và 1.5 cho brightness, contrast và saturation
@@ -149,7 +149,7 @@ def random_crop(image, bboxes, labels, difficulties):
             new_image = image[:, top:bottom, left:right]
 
             # center của các box
-            center_bboxes = (bboxes[:, 2:] - bboxes[:, :2])/2.
+            center_bboxes = (bboxes[:, 2:] + bboxes[:, :2])/2.
             # lọc các box có center ở trong vùng crop
             mask = (center_bboxes[:, 0] > left)*(center_bboxes[:, 0] < right)*(center_bboxes[:, 1] > top)*(center_bboxes[:, 1] < bottom)
 
@@ -210,7 +210,7 @@ def resize(image, bboxes, dims=(300, 300), return_percent_coords=True):
     old_dims   = torch.FloatTensor([original_w, original_h, original_w, original_h]).unsqueeze(0)
     new_bboxes = bboxes/old_dims
 
-    if return_percent_coords:
+    if not return_percent_coords:
         new_dims   = torch.FloatTensor([dims[0], dims[1], dims[0], dims[1]]).unsqueeze(0) 
         new_bboxes = new_bboxes*new_dims 
 
@@ -261,6 +261,8 @@ def transform(image, bboxes, labels, difficulties, phase='train'):
 
         if random.random() < 0.5:
             new_image, new_bboxes = flip(new_image, new_bboxes)
+
+    new_image = new_image/255
 
     new_image, new_bboxes = resize(new_image, new_bboxes, dims=(300, 300))
 

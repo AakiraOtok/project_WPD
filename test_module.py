@@ -1,45 +1,21 @@
 from lib import *
-from VOC_utils import *
-from box_utils import *
-#from augmentations_utils import *
-from utils import *
+from VOC_utils import VOCUtils, class_inverse_map
+data_folder_path = r"H:\projectWPD\data"
+voc = VOCUtils(data_folder_path)
 
-# Test VOCUtils
-#obj = VOCUtils(r"H:\projectWPD\data")
-#img_path, ann_path = obj.make_data_path_list(r"VOC2007", r"test.txt")
-#for img, ann in zip(img_path, ann_path):
-    #image = cv2.imread(img)
-    #boxes, labels, difficults  = obj.read_ann(ann)
-    #draw_box(image, boxes, labels)
-    #cv2.imshow('img', image)
-    #if cv2.waitKey() == ord('q'):
-        #break
-    #image = Image.open(img)
-    #image.show()
-    #time.sleep(5)
-img = Image.open(r"C:\Users\eguit\Pictures\Saved Picture\cute-1-300x300.png", 'r')
-img = img.convert('RGB')
-img = np.asarray(img)
-print(img[0, 0, 0])
+dataset = voc.make_dataset(version=r"VOC2007", file_txt=r"test.txt", phase='test')
 
-while cv2.waitKey() != ord('q'):
-    img = cv2.imread(r"C:\Users\eguit\Pictures\Saved Picture\cute-1-300x300.png")
-    img = torch.tensor(img[:, :, (2, 1, 0)]).permute(2, 0, 1).contiguous()/255
-    #img = Image.open(r"C:\Users\eguit\Pictures\Saved Picture\cute-1-300x300.png")
-    #img = img.convert('RGB')
-    #img = FT.to_tensor(img)
-    bboxes = torch.FloatTensor([[0, 0, 299, 299]])
-    labels = torch.tensor([1])
-    difficulties = torch.tensor([1])
+for i in range(dataset.__len__()):
+    img, bboxes, labels, difficulties = dataset.__getitem__(i)
+    img = img.permute(1, 2, 0).contiguous()[:, :, (2, 1, 0)].contiguous().numpy()
 
-    #img, bboxes = expand(img, bboxes, mean)
-    img, bboxes, labels, difficulties = transform(img, bboxes, labels, difficulties, 'TRAIN')
-    #img, bboxes = resize(img, bboxes)
-    #print(img[0, 0, 0])
-    #img = photometric_distort(img)
-    #print(img[0, 0, 0])
-    img = img.permute(1, 2, 0).contiguous().numpy()[:, :, (2, 1, 0)]
+    for box, label, difficult in zip(bboxes, labels, difficulties):
+        p1 = (int(box[0]*300), int(box[1]*300))
+        p2 = (int(box[2]*300), int(box[3]*300))
+
+        cv2.rectangle(img, p1, p2, (0, 255, 0), 1)
+        text = class_inverse_map[label.item()] + " " + str(difficult.item())
+        cv2.putText(img, text, p1, 1, 1, (0, 255, 0), 1)
+
     cv2.imshow('img', img)
-    #print(img)
-    #time.sleep(5)
-
+    cv2.waitKey()
