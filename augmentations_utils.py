@@ -206,7 +206,10 @@ def resize(image, bboxes, dims=(300, 300), return_percent_coords=True):
     C, original_h, original_w = image.shape
     new_image = FT.resize(image, dims)
 
-    # chia cho [W, H, W, H], không phải [W - 1, H - 1, W - 1, H - 1] vì khi khôi phục lại thì ta nhân W, H
+    # trục tọa độ ảnh bắt đầu từ 0 nên giá trị max phải trừ đi 1
+    original_h -= 1
+    original_w -= 1
+
     old_dims   = torch.FloatTensor([original_w, original_h, original_w, original_h]).unsqueeze(0)
     new_bboxes = bboxes/old_dims
 

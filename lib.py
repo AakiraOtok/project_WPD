@@ -12,3 +12,5 @@ import os
 import cv2
 import random
 import sys
+
+from math import sqrt

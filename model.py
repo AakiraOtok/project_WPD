@@ -291,7 +291,60 @@ class SSD(nn.Module):
             self.pred_conv.init_conv2d()
 
     def create_prior_boxes(self):
+        """ 
+        Tạo 8732 prior boxes (tensor) như trong paper
+        mỗi box có dạng [cx, cy, w, h] được scale
+        """
+        # kích thước feature map tương ứng
+        fmap_sizes    = [38, 19, 10, 5, 3, 1]
+        
+        # scale như trong paper và được tính sẵn thay vì công thức
+        # lưu ý ở conv4_3, tác giả xét như một trường hợp đặc biệt (scale 0.1):
+        # Ở mục 3.1, trang 7 : 
+        # "We set default box with scale 0.1 on conv4 3 .... "
+        # "For SSD512 model, we add extra conv12 2 for prediction, set smin to 0.15, and 0.07 on conv4 3...""
+        box_scales    = [0.1, 0.2, 0.375, 0.55, 0.725, 0.9]
+        aspect_ratios = [
+            [1., 2., 0.5],
+            [1., 2., 3., 0.5, 0.333],
+            [1., 2., 3., 0.5, 0.333],
+            [1., 2., 3., 0.5, 0.333],
+            [1., 2., 0.5],
+            [1., 2., 0.5]
+        ]
+
+        dboxes = []
+        
+        for idx, fmap_size in enumerate(fmap_sizes):
+            for i in range(fmap_size):
+                for j in range(fmap_size):
+
+                    # lưu ý, cx trong ảnh là trục hoành, do đó j + 0.5 chứ không phải i + 0.5
+                    cx = (j + 0.5) / fmap_size
+                    cy = (i + 0.5) / fmap_size
+
+                    for aspect_ratio in aspect_ratios[idx]:
+                        scale = box_scales[idx]
+                        dboxes.append([cx, cy, scale*sqrt(aspect_ratio), scale/sqrt(aspect_ratio)])
+
+                        if aspect_ratio == 1.:
+                            try:
+                                scale = sqrt(scale*box_scales[idx + 1])
+                            except IndexError:
+                                scale = 1
+                            dboxes.append([cx, cy, scale*sqrt(aspect_ratio), scale/sqrt(aspect_ratio)])
+
+        dboxes = torch.FloatTensor(dboxes)
+        dboxes.clamp_(0, 1)
+        #from box_utils import pascalVOC_style, yolo_style
+        #dboxes = pascalVOC_style(dboxes)
+        #dboxes.clamp_(0, 1)
+        #dboxes = yolo_style(dboxes)
                 
+        return dboxes
+    
+    #def multibox_loss(self, alpha=1):
+
 
 
     def forward(self, images):
@@ -302,11 +355,28 @@ class SSD(nn.Module):
         loc, conf                                                    = self.pred_conv(conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats)
         return loc, conf
 
+from box_utils import pascalVOC_style
 
 if __name__ == "__main__":
     model = SSD().to("cuda")
-    images = torch.Tensor(1, 3, 300, 300).to("cuda")
-    loc, conf = model(images)
-    print(loc.shape)
-    print(conf.shape)
+    images = torch.Tensor(1, 3, 300, 300).fill_(0).to("cuda")
+    #loc, conf = model(images)
+    #print(loc.shape)
+    #print(conf.shape)
+
+    dboxes = model.create_prior_boxes()
+    #print(dboxes.shape)
+
+    images = images.squeeze(0).cpu().numpy()
+    dboxes = pascalVOC_style(dboxes)*299
+
+    for box in dboxes:
+        p1 = (int(box[0]), int(box[1]))
+        p2 = (int(box[2]), int(box[3]))
+        img = np.ndarray((300, 300, 3))
+        #print(img.shape)
+        cv2.rectangle(img, p1, p2, (0, 255, 0), 1)
+        cv2.imshow("img", img)
+        cv2.waitKey()
+
 
