@@ -3,6 +3,15 @@ from VOC_utils import VOCUtils, class_inverse_map
 data_folder_path = r"H:\projectWPD\data"
 voc = VOCUtils(data_folder_path)
 
+a = torch.tensor([[1, 2, 3], [4, 5, 6]])
+b = torch.BoolTensor([True, False])
+
+c = a[:]
+c = a[b]
+c[0, 0] = 100
+print(a)
+sys.exit()
+
 dataset = voc.make_dataset(version=r"VOC2007", file_txt=r"test.txt", phase='test')
 
 for i in range(dataset.__len__()):
