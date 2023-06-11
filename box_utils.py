@@ -93,3 +93,178 @@ def jaccard(box_a, box_b):
     inter = intersect(box_a, box_b)
 
     return inter/(area - inter)
+
+def matching_strategy_1(dboxes, bboxes, labels, offset_t, labels_t, idx, threshold=0.5):
+    """_summary_
+
+    Args:
+        dboxes : [8732, 4] [cx, cy, w, h]
+        bboxes : [nbox, 4] [xmin, ymin, xmax, ymax]
+        labels : [nbox]
+        các tham số còn lại là truyền vào để gán
+    """
+    overlaps = jaccard(bboxes, pascalVOC_style(dboxes))
+
+    _, best_dboxes_idx            = overlaps.max(dim=1, keepdim=False)
+    matched_overlap, matched_idx  = overlaps.max(dim=0, keepdim=False)
+
+    for i in range(best_dboxes_idx.size(0)):
+        matched_idx[best_dboxes_idx[i]] = i
+
+    matched_overlap.index_fill_(dim=0, index=best_dboxes_idx, value=1) # đảm bảo rằng giữ lại các box đã được match sau bước phía dưới
+    labels_t[idx]                        = labels[matched_idx]
+    labels_t[idx][matched_overlap < threshold] = 0
+    offset_t[idx]                        =  encode_variance(dboxes, yolo_style(bboxes[matched_idx]))
+
+class MultiBoxLoss(nn.Module):
+    """
+    Args:
+        offset_p : [batch, 8732, 4] là offset được model dự đoán ra
+        conf_p   : [batch, 8732, nclass] là độ tự tin được model dự đoán ra
+        dboxes   : [batch, 8732, 4] [cx, cy, w, h] chuẩn hóa [0..1]
+        targets  : [nbox, 5], 4 cái đầu là [xmin, ymin, xmax, ymax] chuẩn hóa [0..1], cái cuối là label 
+    
+    Out :
+        loss = L(x,c,l,g) = (Lconf(x, c) + αLloc(x,l,g)) / N
+    """
+
+    def __init__(self, num_classes):
+        super().__init__()
+        self.num_classes = num_classes
+
+    def forward(self, offset_p, conf_p, dboxes, batch_bboxes, batch_labels):
+
+        batch_size = offset_p.size(0)
+        nbox       = offset_p.size(1)
+        offset_t = torch.Tensor(batch_size, nbox, 4).to("cuda")
+        labels_t = torch.LongTensor(batch_size, nbox).to("cuda")
+
+        for idx in range(batch_size):
+            bboxes    = batch_bboxes[idx]
+            labels    = batch_labels[idx]
+            matching_strategy_1(dboxes, bboxes, labels, offset_t, labels_t, idx)
+
+        pos_mask = (labels_t != 0)
+        neg_mask = (labels_t == 0)
+
+        #location loss
+        loss_l = F.smooth_l1_loss(offset_p[pos_mask], offset_t[pos_mask], reduction="sum")
+
+        #confidence loss
+        #hard negative mining
+        num_pos = pos_mask.sum(dim=1)
+        num_neg = torch.clamp(3*num_pos, max=nbox)
+
+        conf_loss = F.cross_entropy(conf_p.view(-1, self.num_classes), labels_t.view(-1), reduction="none")
+        conf_loss = conf_loss.view(batch_size, nbox)
+        _, idx    = torch.sort(conf_loss, dim=1, descending=True)
+        _, idx    = torch.sort(idx, dim=1)
+        neg_mask      = idx < num_neg.unsqueeze(-1)
+
+        loss_c = conf_loss[pos_mask + neg_mask].sum()
+
+
+        return (loss_l + loss_c)/num_pos.sum()
+
+
+
+def nms(bboxes, conf, conf_threshold=0.01, iou_threshold=0.45):
+    #"""
+    #Thực hiện thuật toán non maximum sppression
+    #Đầu vào :
+     #bboxes : [8732, 4]
+     #conf   : [8732]  confidence score
+    #Đầu ra :
+     #ret_bboxes [nbox, 4]
+     #ret_labels [nbox]
+
+     #tất cả đều là tensor
+    #"""
+
+    # Giữ lại những box có confidence score > threshold
+    mask   = (conf > conf_threshold)
+    bboxes = bboxes[mask]
+    conf   = conf[mask]
+
+    conf, idx = torch.sort(conf, descending=True)
+    bboxes    = bboxes[idx]
+
+    ret_bboxes  = []
+    ret_conf    = []
+
+    while(conf.size(0)):
+        ret_bboxes.append(bboxes[0])
+        ret_conf.append(conf[0:1])
+
+        if conf.size(0) == 1:
+            break
+
+        overlap = jaccard(bboxes[0:1], bboxes[1:])
+        overlap.squeeze_(0)
+
+        bboxes = bboxes[1:]
+        conf   = conf[1:]
+
+        mask   = (overlap < iou_threshold)
+        bboxes = bboxes[mask]
+        conf   = conf[mask]
+
+    if (len(ret_bboxes) == 0):
+        return None, None
+    
+    return torch.stack(ret_bboxes, dim=0), torch.cat(ret_conf)
+
+def Non_Maximum_Suppression(dboxes, offset, conf, conf_threshold=0.01, iou_threshold=0.45, top_k=200):
+    #"""
+    #Thực hiện thuật toán non maximum sppression
+    #Đầu vào :
+     #loc  : [8732, 4] là offset
+     #conf : [8732, config.num_classes]
+     #dboxes : [8732, 4] [x, y, w, h]
+    #Đầu ra :
+     #ret_bboxes [nbox, 4]
+     #ret_labels [nbox]
+     #ret_confs  [nbox]
+
+     #tất cả đều là tensor
+    #"""
+
+    # Lấy bboxes từ dboxes và offset
+    bboxes = decode_variance(dboxes, offset)
+    bboxes = pascalVOC_style(bboxes)
+
+    # Lấy softmax để tổng xác suất confidence mỗi box = 1
+    conf   = F.softmax(conf, dim=1)
+
+    pred_bboxes = [] 
+    pred_labels = []
+    pred_confs  = []
+    num_classes = 21
+
+    for cur_class in range(1, num_classes): # bỏ class 0 là background
+        nms_bboxes, nms_conf = nms(bboxes, conf[:, cur_class], conf_threshold, iou_threshold)
+        if (nms_bboxes == None):
+            continue
+        nms_labels           = torch.LongTensor(nms_conf.size(0)).fill_(cur_class).to("cuda")
+
+        pred_bboxes.append(nms_bboxes)
+        pred_labels.append(nms_labels)
+        pred_confs.append(nms_conf)
+
+    if (len(pred_bboxes) == 0):
+        return None, None, None
+
+    pred_bboxes = torch.cat(pred_bboxes)
+    pred_labels = torch.cat(pred_labels)
+    pred_confs  = torch.cat(pred_confs)
+
+    pred_confs, idx = torch.sort(pred_confs, descending=True)
+    pred_bboxes     = pred_bboxes[idx]
+    pred_labels     = pred_labels[idx]
+
+    pred_bboxes = pred_bboxes[:top_k]
+    pred_labels = pred_labels[:top_k]
+    pred_confs  = pred_confs[:top_k]
+
+    return pred_bboxes, pred_labels, pred_confs
+

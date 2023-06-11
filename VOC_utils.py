@@ -1,5 +1,5 @@
 from lib import *
-from augmentations_utils import transform
+from augmentations_utils import CustomAugmentation
 
 class_direct_map = {
     'aeroplane'   : 1,
@@ -89,7 +89,7 @@ def read_ann(ann_path):
         bnd = obj.find("bndbox")
         box = []
         for coor in coors:
-            box.append(int(bnd.find(coor).text) - 1)
+            box.append(float(bnd.find(coor).text) - 1)
         bboxes.append(box)
 
     return bboxes, labels, difficulties
@@ -117,14 +117,17 @@ class VOC_dataset(data.Dataset):
         temp = []
         for label in labels:
             temp.append(class_direct_map[label])
-        labels = temp
+        bboxes       = np.array(bboxes)
+        labels       = np.array(temp)
+        difficulties = np.array(difficulties)
 
-        image        = torch.from_numpy(image[:, :, (2, 1, 0)]).permute(2, 0, 1).contiguous()
+        image, bboxes, labels, difficulties = self.transform(image, bboxes, labels, difficulties, self.phase)
+
+        image        = torch.FloatTensor(image[:, :, (2, 1, 0)]).permute(2, 0, 1).contiguous()
         bboxes       = torch.FloatTensor(bboxes)
         labels       = torch.LongTensor(labels)
         difficulties = torch.LongTensor(difficulties)
 
-        image, bboxes, labels, difficulties = self.transform(image, bboxes, labels, difficulties, self.phase)
         return image, bboxes, labels, difficulties
 
 
@@ -167,18 +170,35 @@ class VOCUtils():
 
         return img_list, ann_list
 
-    def make_dataset(self, version, file_txt, transform=transform, phase='train'):
+    def make_dataset(self, version, file_txt, transform=CustomAugmentation(), phase='train'):
         img_path_list, ann_path_list = self.make_data_path_list(version, file_txt)
         dataset = VOC_dataset(img_path_list, ann_path_list, transform, phase)
         return dataset
     
     def make_dataloader(self, version, file_txt, batch_size, shuffle, collate_fn=collate_fn, phase='train',num_worker=0, pin_memory=False):
-        dataset    = self.make_dataset(version, file_txt, transform, phase)
+        dataset    = self.make_dataset(version, file_txt, CustomAugmentation(), phase)
         dataloader = data.DataLoader(dataset, batch_size, shuffle, num_workers=num_worker, collate_fn=collate_fn, pin_memory=pin_memory) 
         return dataloader
     
 
+if __name__ == "__main__":
+    data_folder_path = r"H:\projectWPD\data"
+    voc = VOCUtils(data_folder_path)
+    dataloader = voc.make_dataloader(r"VOC2007", r"test.txt", 1, 0, phase="train")
+    for images, bboxes, labels, difficulties in dataloader:
+        img = images.squeeze(0).permute(1, 2, 0).contiguous()[:, :, (2, 1, 0)].cpu().numpy()
+        bboxes = bboxes[0]
+        labels = labels[0]
+        difficulties = difficulties[0]
+        
+        H, W, C = img.shape
+        H -= 1
+        W -= 1
 
-
-
+        for box, label, difficult in zip(bboxes, labels, difficulties):
+            p1 = (int(box[0]*W), int(box[1]*H))
+            p2 = (int(box[2]*W), int(box[3]*H))
+            cv2.rectangle(img, p1, p2, (0, 255, 0), 1)
+        cv2.imshow("img", img)
+        cv2.waitKey()
 

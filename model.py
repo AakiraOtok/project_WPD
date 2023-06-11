@@ -1,4 +1,5 @@
 from lib import *
+from box_utils import pascalVOC_style, yolo_style
 
 class VGG16Base(nn.Module):
     """
@@ -335,17 +336,12 @@ class SSD(nn.Module):
                             dboxes.append([cx, cy, scale*sqrt(aspect_ratio), scale/sqrt(aspect_ratio)])
 
         dboxes = torch.FloatTensor(dboxes)
+        
+        dboxes = pascalVOC_style(dboxes)
         dboxes.clamp_(0, 1)
-        #from box_utils import pascalVOC_style, yolo_style
-        #dboxes = pascalVOC_style(dboxes)
-        #dboxes.clamp_(0, 1)
-        #dboxes = yolo_style(dboxes)
+        dboxes = yolo_style(dboxes)
                 
         return dboxes
-    
-    #def multibox_loss(self, alpha=1):
-
-
 
     def forward(self, images):
         conv4_3_feats, conv7_feats                                   = self.base_net(images)
@@ -353,30 +349,7 @@ class SSD(nn.Module):
         conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats = self.auxi_conv(conv7_feats)
 
         loc, conf                                                    = self.pred_conv(conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats)
-        return loc, conf
+        return loc, conf, self.create_prior_boxes()
 
-from box_utils import pascalVOC_style
-
-if __name__ == "__main__":
-    model = SSD().to("cuda")
-    images = torch.Tensor(1, 3, 300, 300).fill_(0).to("cuda")
-    #loc, conf = model(images)
-    #print(loc.shape)
-    #print(conf.shape)
-
-    dboxes = model.create_prior_boxes()
-    #print(dboxes.shape)
-
-    images = images.squeeze(0).cpu().numpy()
-    dboxes = pascalVOC_style(dboxes)*299
-
-    for box in dboxes:
-        p1 = (int(box[0]), int(box[1]))
-        p2 = (int(box[2]), int(box[3]))
-        img = np.ndarray((300, 300, 3))
-        #print(img.shape)
-        cv2.rectangle(img, p1, p2, (0, 255, 0), 1)
-        cv2.imshow("img", img)
-        cv2.waitKey()
 
 

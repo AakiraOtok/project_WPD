@@ -4,6 +4,7 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms.functional as FT
 import torch.nn.functional as F
+import torch.optim as optim
 
 import numpy as np
 import time

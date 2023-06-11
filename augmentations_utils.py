@@ -1,274 +1,462 @@
-from lib import *
-from box_utils import jaccard
+import torch
+import cv2
+import numpy as np
+import types
+import random
 
-# Các hàm được lấy từ : https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection/tree/master
+def intersect(box_a, box_b):
+    max_xy = np.minimum(box_a[:, 2:], box_b[2:])
+    min_xy = np.maximum(box_a[:, :2], box_b[:2])
+    inter = np.clip((max_xy - min_xy), a_min=0, a_max=np.inf)
+    return inter[:, 0] * inter[:, 1]
 
-def photometric_distort(image):
+
+def jaccard_numpy(box_a, box_b):
+    """Compute the jaccard overlap of two sets of boxes.  The jaccard overlap
+    is simply the intersection over union of two boxes.
+    E.g.:
+        A ∩ B / A ∪ B = A ∩ B / (area(A) + area(B) - A ∩ B)
+    Args:
+        box_a: Multiple bounding boxes, Shape: [num_boxes,4]
+        box_b: Single bounding box, Shape: [4]
+    Return:
+        jaccard overlap: Shape: [box_a.shape[0], box_a.shape[1]]
     """
-    Làm biến dạng (distort) độ sáng (brightness), độ tương phản (contrast), độ bão hòa (saturation) và màu sắc (hue)
-    với xác suất 50%, thứ tự thực hiện các thao tác là ngẫu nhiên
+    inter = intersect(box_a, box_b)
+    area_a = ((box_a[:, 2]-box_a[:, 0]) *
+              (box_a[:, 3]-box_a[:, 1]))  # [A,B]
+    area_b = ((box_b[2]-box_b[0]) *
+              (box_b[3]-box_b[1]))  # [A,B]
+    union = area_a + area_b - inter
+    return inter / union  # [A,B]
 
-    param:
-    image : tensor [C, H, W] (RGB)
 
-    return:
-    new_image : tensor [C, H, W] (RGB)
-
+class Compose(object):
+    """Composes several augmentations together.
+    Args:
+        transforms (List[Transform]): list of transforms to compose.
+    Example:
+        >>> augmentations.Compose([
+        >>>     transforms.CenterCrop(10),
+        >>>     transforms.ToTensor(),
+        >>> ])
     """
+
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, img, boxes=None, labels=None, difficulties=None):
+        for t in self.transforms:
+            img, boxes, labels, difficulties = t(img, boxes, labels, difficulties)
+        return img, boxes, labels, difficulties
+
+
+class Lambda(object):
+    """Applies a lambda as a transform."""
+
+    def __init__(self, lambd):
+        assert isinstance(lambd, types.LambdaType)
+        self.lambd = lambd
+
+    def __call__(self, img, boxes=None, labels=None, difficulties=None):
+        return self.lambd(img, boxes, labels, difficulties)
+
+
+class ConvertFromInts(object):
+    """
+    chuyển ảnh từ int sang float32
+    """
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        return image.astype(np.float32), boxes, labels, difficulties
+
+
+class SubtractMeans(object):
+    def __init__(self, mean):
+        self.mean = np.array(mean, dtype=np.float32)
+
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        image = image.astype(np.float32)
+        image -= self.mean
+        return image.astype(np.float32), boxes, labels, difficulties
     
-    new_image = image
+class Normalize():
+    def __init__(self, mean, std):
+        self.mean = np.array(mean)
+        self.std  = np.array(std)
 
-    distortions = [
-        FT.adjust_brightness,
-        FT.adjust_contrast,
-        FT.adjust_saturation,
-        FT.adjust_hue
-    ]
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        image = image.astype(np.float32)/255
+        image = (image - self.mean)/self.std
+        return image, boxes, labels, difficulties
 
-    random.shuffle(distortions)
 
-    for manip in distortions:
-        if random.random() < 0.5 : 
-            if manip.__name__ == 'adjust_hue':
-                # Caffe repo sử dụng hue delta = 18, ta chia cho 255 bởi vì Pytorch cần giá trị chuẩn hóa
-                adjust_factor = random.uniform(-18/255., 18/255.)
+class ToAbsoluteCoords(object):
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        height, width, channels = image.shape
+        boxes[:, 0] *= width
+        boxes[:, 2] *= width
+        boxes[:, 1] *= height
+        boxes[:, 3] *= height
 
-            else:
-                #Caffe repo sử dụng 'lower' và 'upper' là 0.5 và 1.5 cho brightness, contrast và saturation
-                adjust_factor = random.uniform(0.5, 1.5)
+        return image, boxes, labels, difficulties
 
-            new_image = manip(new_image, adjust_factor)
 
-    return new_image
+class ToPercentCoords(object):
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        height, width, channels = image.shape
+        boxes[:, 0] /= width
+        boxes[:, 2] /= width
+        boxes[:, 1] /= height
+        boxes[:, 3] /= height
 
-def expand(image, bboxes, filler):
+        return image, boxes, labels, difficulties
+
+
+class Resize(object):
+    def __init__(self, size=300):
+        self.size = size
+
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        image = cv2.resize(image, (self.size,
+                                 self.size))
+        return image, boxes, labels, difficulties
+
+
+class RandomSaturation(object):
+    def __init__(self, lower=0.5, upper=1.5):
+        self.lower = lower
+        self.upper = upper
+        assert self.upper >= self.lower, "contrast upper must be >= lower."
+        assert self.lower >= 0, "contrast lower must be non-negative."
+
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        if np.random.randint(2):
+            image[:, :, 1] *= np.random.uniform(self.lower, self.upper)
+
+        return image, boxes, labels, difficulties
+
+
+class RandomHue(object):
+    def __init__(self, delta=18.0):
+        assert delta >= 0.0 and delta <= 360.0
+        self.delta = delta
+
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        if np.random.randint(2):
+            image[:, :, 0] += np.random.uniform(-self.delta, self.delta)
+            image[:, :, 0][image[:, :, 0] > 360.0] -= 360.0
+            image[:, :, 0][image[:, :, 0] < 0.0] += 360.0
+        return image, boxes, labels, difficulties
+
+
+class RandomLightingNoise(object):
+    def __init__(self):
+        self.perms = ((0, 1, 2), (0, 2, 1),
+                      (1, 0, 2), (1, 2, 0),
+                      (2, 0, 1), (2, 1, 0))
+
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        if np.random.randint(2):
+            swap = self.perms[np.random.randint(len(self.perms))]
+            shuffle = SwapChannels(swap)  # shuffle channels
+            image = shuffle(image)
+        return image, boxes, labels, difficulties
+
+
+class ConvertColor(object):
+    def __init__(self, current='BGR', transform='HSV'):
+        self.transform = transform
+        self.current = current
+
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        if self.current == 'BGR' and self.transform == 'HSV':
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        elif self.current == 'HSV' and self.transform == 'BGR':
+            image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+        else:
+            raise NotImplementedError
+        return image, boxes, labels, difficulties
+
+
+class RandomContrast(object):
+    def __init__(self, lower=0.5, upper=1.5):
+        self.lower = lower
+        self.upper = upper
+        assert self.upper >= self.lower, "contrast upper must be >= lower."
+        assert self.lower >= 0, "contrast lower must be non-negative."
+
+    # expects float image
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        if np.random.randint(2):
+            alpha = np.random.uniform(self.lower, self.upper)
+            image *= alpha
+        return image, boxes, labels, difficulties
+
+
+class RandomBrightness(object):
+    def __init__(self, delta=32):
+        assert delta >= 0.0
+        assert delta <= 255.0
+        self.delta = delta
+
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        if np.random.randint(2):
+            delta = np.random.uniform(-self.delta, self.delta)
+            image += delta
+        return image, boxes, labels, difficulties
+
+
+class ToCV2Image(object):
+    def __call__(self, tensor, boxes=None, labels=None, difficulties=None):
+        return tensor.cpu().numpy().astype(np.float32).transpose((1, 2, 0)), boxes, labels, difficulties
+
+
+class ToTensor(object):
+    def __call__(self, cvimage, boxes=None, labels=None, difficulties=None):
+        return torch.from_numpy(cvimage.astype(np.float32)).permute(2, 0, 1), boxes, labels, difficulties
+
+
+class RandomSampleCrop(object):
+    """Crop
+    Arguments:
+        img (Image): the image being input during training
+        boxes (Tensor): the original bounding boxes in pt form
+        labels (Tensor): the class labels for each bbox
+        mode (float tuple): the min and max jaccard overlaps
+    Return:
+        (img, boxes, classes)
+            img (Image): the cropped image
+            boxes (Tensor): the adjusted bounding boxes in pt form
+            labels (Tensor): the class labels for each bbox
     """
-    Thực hiện thu nhỏ hình ảnh (zoom out) bằng cách đặt ảnh gốc vào một khung lớn hơn, khoảng trống được lấp lại bằng filler
+    def __init__(self):
+        self.sample_options = (
+            # using entire original input image
+            None,
+            # sample a patch s.t. MIN jaccard w/ obj in .1,.3,.4,.7,.9
+            (0.1, None),
+            (0.3, None),
+            (0.7, None),
+            (0.9, None),
+            # randomly sample a patch
+            (None, None),
+        )
 
-    Giúp học được cách phát hiện các vật thể nhỏ tốt hơn
+    def __call__(self, image, boxes=None, labels=None, difficulties=None):
+        height, width, _ = image.shape
+        while True:
+            # randomly choose a mode
+            mode = random.choice(self.sample_options)
+            if mode is None:
+                return image, boxes, labels, difficulties
 
-    param:
-    image  : tensor [C, H, W]
-    bboxes : tensor [n_objects, 4] [xmin, ymin, xmax, ymax]
-    filler : dùng để lấp khoảng trống, list [R, G, B]
+            min_iou, max_iou = mode
+            if min_iou is None:
+                min_iou = float('-inf')
+            if max_iou is None:
+                max_iou = float('inf')
 
-    return:
-    image  : tensor [C, H, W]
-    bboxes : tensor [n_objects, 4] [xmin, ymin, xmax, ymax]
+            # max trails (50)
+            for _ in range(50):
+                current_image = image
+
+                w = np.random.uniform(0.3 * width, width)
+                h = np.random.uniform(0.3 * height, height)
+
+                # aspect ratio constraint b/t .5 & 2
+                if h / w < 0.5 or h / w > 2:
+                    continue
+
+                left = np.random.uniform(width - w)
+                top = np.random.uniform(height - h)
+
+                # convert to integer rect x1,y1,x2,y2
+                rect = np.array([int(left), int(top), int(left+w), int(top+h)])
+
+                # calculate IoU (jaccard overlap) b/t the cropped and gt boxes
+                overlap = jaccard_numpy(boxes, rect)
+
+                # is min and max overlap constraint satisfied? if not try again
+                # a bug was adressed at https://github.com/amdegroot/ssd.pytorch/issues/119
+                if overlap.max() < min_iou or overlap.min() > max_iou:
+                    continue 
+
+                # cut the crop from the image
+                current_image = current_image[rect[1]:rect[3], rect[0]:rect[2],
+                                              :]
+
+                # keep overlap with gt box IF center in sampled patch
+                centers = (boxes[:, :2] + boxes[:, 2:]) / 2.0
+
+                # mask in all gt boxes that above and to the left of centers
+                m1 = (rect[0] < centers[:, 0]) * (rect[1] < centers[:, 1])
+
+                # mask in all gt boxes that under and to the right of centers
+                m2 = (rect[2] > centers[:, 0]) * (rect[3] > centers[:, 1])
+
+                # mask in that both m1 and m2 are true
+                mask = m1 * m2
+
+                # have any valid boxes? try again if not
+                if not mask.any():
+                    continue
+
+                # take only matching gt boxes
+                current_boxes = boxes[mask, :].copy()
+
+                # take only matching gt labels
+                current_labels = labels[mask]
+
+                # add difficulties
+                current_difficulties = difficulties[mask]
+
+                # should we use the box left and top corner or the crop's
+                current_boxes[:, :2] = np.maximum(current_boxes[:, :2],
+                                                  rect[:2])
+                # adjust to crop (by substracting crop's left,top)
+                current_boxes[:, :2] -= rect[:2]
+
+                current_boxes[:, 2:] = np.minimum(current_boxes[:, 2:],
+                                                  rect[2:])
+                # adjust to crop (by substracting crop's left,top)
+                current_boxes[:, 2:] -= rect[:2]
+
+                return current_image, current_boxes, current_labels, current_difficulties
+
+
+class Expand(object):
+    def __init__(self, mean):
+        self.mean = mean
+
+    def __call__(self, image, boxes, labels, difficulties):
+        if np.random.randint(2):
+            return image, boxes, labels, difficulties
+
+        height, width, depth = image.shape
+        ratio = np.random.uniform(1, 4)
+        left = np.random.uniform(0, width*ratio - width)
+        top = np.random.uniform(0, height*ratio - height)
+
+        expand_image = np.zeros(
+            (int(height*ratio), int(width*ratio), depth),
+            dtype=image.dtype)
+        expand_image[:, :, :] = self.mean
+        expand_image[int(top):int(top + height),
+                     int(left):int(left + width)] = image
+        image = expand_image
+
+        boxes = boxes.copy()
+        boxes[:, :2] += (int(left), int(top))
+        boxes[:, 2:] += (int(left), int(top))
+
+        return image, boxes, labels, difficulties
+
+
+class RandomMirror(object):
+    def __call__(self, image, boxes, classes, difficulties):
+        _, width, _ = image.shape
+        if np.random.randint(2):
+            image = image[:, ::-1]
+            boxes = boxes.copy()
+            boxes[:, 0::2] = width - boxes[:, 2::-2]
+        return image, boxes, classes, difficulties
+
+
+class SwapChannels(object):
+    """Transforms a tensorized image by swapping the channels in the order
+     specified in the swap tuple.
+    Args:
+        swaps (int triple): final order of channels
+            eg: (2, 1, 0)
     """
 
-    C, original_h, original_w = image.shape 
+    def __init__(self, swaps):
+        self.swaps = swaps
 
-    min_scale = 1
-    max_scale = 4
-    scale = random.uniform(min_scale, max_scale)
-
-    new_h = int(original_h*scale)
-    new_w = int(original_w*scale)
-
-    filler =  torch.FloatTensor(filler) # [3]
-    new_image = torch.ones((C, new_h, new_w)) * filler.unsqueeze(1).unsqueeze(1) # [3, new_h, new_w]
-    # Không dùng expand() như new_image = filler.unsqueeze(1).unsquezee(1).expand(3, new_h, new_w)
-    # vì tất cả giá trị expand đều dùng chung bộ nhớ, đổi một pixel sẽ đổi tất cả
-
-
-    left  = random.randint(0, new_w - original_w)
-    right = left + original_w
-
-    top    = random.randint(0, new_h - original_h)
-    bottom = top + original_h
-
-    # Đặt ảnh gốc vào bên trong ảnh mới
-    new_image[:, top:bottom, left:right] = image
-
-    # Tính lại vị trí của bboxes
-    new_bboxes = bboxes + torch.FloatTensor([left, top, left, top]).unsqueeze(0)
-
-    return new_image, new_bboxes
-
-def random_crop(image, bboxes, labels, difficulties):
-    """
-    Thực hiện cắt ngẫu nhiên (random crop) như đã nếu trong paper gốc. Giúp cho việc học xác định các đối tượng lớn và bị che
-    chỉ xuất hiện một phần (partial objects).
-
-    Lưu ý rằng có thể có vài objects sẽ được loại bỏ hoàn toàn
-
-    :param image, tensor [C, H, W]
-    :param bboxes, tensor [n_objects, 4]
-    :param labels, tensor [n_objects]
-    :param difficulties, tensor [n_objects]
-
-    return: 
-    new_image, tensor [C, new_h, new_w]
-    new_bboxes, tensor [new_n_objects, 4]
-    new_labels, tensor [new_n_objects]
-    new_difficulties, tensor [new_n_objects]
-    """
-
-    C, original_h, original_w = image.shape
-
-    while True:
-
-        # Các mức min overlap ngẫu nhiên, tức là yêu cầu ít nhất có một box > min overlap với croped image
-        min_overlap = random.choice([0., 0.1, 0.3, 0.5, 0.7, 0.9, None])
-
-        if min_overlap is None:
-            return image, bboxes, labels, difficulties
-        
-        # Thử 50 lần cho min_overlap này
-        # Điều này không được đề cập trong paper nhưng tác giả đã lựa chọn max_trials=50 trong repo chính thức của mình
-        max_trials = 50
-        for _ in range(max_trials):
-            # Scale phải trong khoảng [0.3, 1]
-            # paper đề cập nó là [0.1, 1], nhưng thực sự trong repo chính thức con số này là [0.3, 1]
-            min_scale = 0.3
-            scale_h = random.uniform(min_scale, 1)
-            scale_w = random.uniform(min_scale, 1)
-
-            new_h = int(original_h*scale_h)
-            new_w = int(original_w*scale_w)
-
-            # Tỉ lệ khung hình phải trong đoạn [0.5, 2]
-            aspect_ratio = new_h/new_w
-            if not 0.5 < aspect_ratio < 2:
-                continue
-
-            left   = random.randint(0, original_w - new_w)
-            right  = left + new_w
-            top    = random.randint(0, original_h - new_h)
-            bottom = top + new_h
-
-            crop   = torch.FloatTensor([left, top, right, bottom])
-
-            overlap    = jaccard(crop.unsqueeze(0), bboxes).squeeze(0) # [nbox]
-            overlap    = overlap.max().item() #scalar
-
-            if overlap < min_overlap:
-                continue
-
-            new_image = image[:, top:bottom, left:right]
-
-            # center của các box
-            center_bboxes = (bboxes[:, 2:] + bboxes[:, :2])/2.
-            # lọc các box có center ở trong vùng crop
-            mask = (center_bboxes[:, 0] > left)*(center_bboxes[:, 0] < right)*(center_bboxes[:, 1] > top)*(center_bboxes[:, 1] < bottom)
-
-            if not mask.any():
-                continue
-
-            new_bboxes       = bboxes[mask]
-            new_labels       = labels[mask]
-            new_difficulties = difficulties[mask]
-
-            new_bboxes[:, :2]  = torch.max(new_bboxes[:, :2], crop[:2])
-            new_bboxes[:, :2] -= crop[:2]
-            new_bboxes[:, 2:]  = torch.min(new_bboxes[:, 2:], crop[2:])
-            new_bboxes[:, 2:] -= crop[:2]
-
-            return new_image, new_bboxes, new_labels, new_difficulties 
-
-def flip(image, bboxes):
-    """
-    Lật ảnh lại theo chiều ngang
-
-    :param image, tensor [C, H, W]
-    :param bboxes, tensor [n_objects, 4]
-
-    return:
-    new_image, tensor [C, H, W]
-    new_bboxes, tensor [n_objects, 4]
-    """
-
-    C, H, W = image.shape
-    new_image = FT.hflip(image)
-
-    new_bboxes = bboxes
-    new_bboxes[:, 0] = W - new_bboxes[:, 0] - 1  # -1 bởi vì kích thước ảnh là H thì trục tọa độ là [0 ... H - 1]
-    new_bboxes[:, 2] = W - new_bboxes[:, 2] - 1
-
-    # xmin và xmax sau phép biến đổi đã đổi chỗ cho nhau, cần đổi lại
-    new_bboxes = new_bboxes[:, [2, 1, 0, 3]]
-
-    return new_image, new_bboxes
-
-def resize(image, bboxes, dims=(300, 300), return_percent_coords=True):
-    """
-    Thay đổi kích thước của bức ảnh. SSD sử dụng size=(300, 300) 
-
-    :param image, tensor [C, H, W]
-    :param bboxes, tensor [n_objects, 4]
-
-    return:
-    new_image, tensor [C, H, W]
-    new_bboxes, tensor [n_objects, 4] chuẩn hóa [0, 1]
-    """
-
-    C, original_h, original_w = image.shape
-    new_image = FT.resize(image, dims)
-
-    # trục tọa độ ảnh bắt đầu từ 0 nên giá trị max phải trừ đi 1
-    original_h -= 1
-    original_w -= 1
-
-    old_dims   = torch.FloatTensor([original_w, original_h, original_w, original_h]).unsqueeze(0)
-    new_bboxes = bboxes/old_dims
-
-    if not return_percent_coords:
-        new_dims   = torch.FloatTensor([dims[0], dims[1], dims[0], dims[1]]).unsqueeze(0) 
-        new_bboxes = new_bboxes*new_dims 
-
-    return new_image, new_bboxes
+    def __call__(self, image):
+        """
+        Args:
+            image (Tensor): image tensor to be transformed
+        Return:
+            a tensor with channels swapped according to swap
+        """
+        # if torch.is_tensor(image):
+        #     image = image.data.cpu().numpy()
+        # else:
+        #     image = np.array(image)
+        image = image[:, :, self.swaps]
+        return image
 
 
-def transform(image, bboxes, labels, difficulties, phase='train'):
-    """
-    Áp dụng các bước transform như trong paper:
+class PhotometricDistort(object):
+    def __init__(self):
+        self.pd = [
+            RandomContrast(),
+            ConvertColor(transform='HSV'),
+            RandomSaturation(),
+            RandomHue(),
+            ConvertColor(current='HSV', transform='BGR'),
+            RandomContrast()
+        ]
+        self.rand_brightness = RandomBrightness()
+        self.rand_light_noise = RandomLightingNoise()
 
-    - Ngẫu nhiên điều chỉnh brightness, contrast, saturation và hue với tỉ lệ 50% cho mỗi thao tác và thứ tự ngẫu nhiên
-    - Ngẫu nhiên phóng to ảnh với tỉ lệ [1, 4]
-    - Random crop ảnh, tỉ lệ khung hình phải trong khoảng [0...2], các mức min_overlap=[0., 0.1, 0.3, 0.5, 0.7, 0.9, None]
-    - Ngẫu nhiên flip dọc với tỉ lệ 50%
-    - Resize ảnh lại về (300, 300)
-    - Chuyển tất cả các tọa độ về dạng chuẩn hóa
-    - Chuẩn hóa ảnh với mean và std của ImageNet
+    def __call__(self, image, boxes, labels, difficulties):
+        im = image.copy()
+        im, boxes, labels, difficulties = self.rand_brightness(im, boxes, labels, difficulties)
+        if np.random.randint(2):
+            distort = Compose(self.pd[:-1])
+        else:
+            distort = Compose(self.pd[1:])
+        im, boxes, labels, difficulties = distort(im, boxes, labels, difficulties)
+        return self.rand_light_noise(im, boxes, labels, difficulties)
 
-    :param image, tensor [C, H, W]
-    :param bboxes, tensor [n_objects, 4]
-    :param labels, tensor [n_objects]
-    :param difficulties, tensor [n_objects]
 
-    return:
-    new_image, tensor [C, H, W]
-    new_bboxes, tensor [new_n_objects, 4]
-    new_labels, tensor [new_n_objects]
-    new_difficulties, tensor [new_n_objects]
-    """
+class SSDAugmentation(object):
+    def __init__(self, size=300, mean=(104, 117, 123)):
+        self.mean = mean
+        self.size = size
+        self.augment = Compose([
+            ConvertFromInts(),
+            ToAbsoluteCoords(),
+            PhotometricDistort(),
+            Expand(self.mean),
+            RandomSampleCrop(),
+            RandomMirror(),
+            ToPercentCoords(),
+            Resize(self.size),
+            SubtractMeans(self.mean)
+        ])
 
-    assert phase in {'train', 'test'}
+    def __call__(self, img, boxes, labels, difficulties):
+        return self.augment(img, boxes, labels, difficulties)
 
-    mean = [0.485, 0.456, 0.406]
-    std = [0.229, 0.224, 0.225]
+class CustomAugmentation():
+    def __init__(self, phase="train", size=300, mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229]):
+        assert(phase in ("train", "valid"))
+        self.mean = mean
+        self.size = size
+        self.train_augment = Compose([
+                ConvertFromInts(),
+                PhotometricDistort(),
+                Expand(self.mean),
+                RandomSampleCrop(),
+                RandomMirror(),
+                ToPercentCoords(),
+                Resize(self.size),
+                #SubtractMeans(self.mean)
+                Normalize(mean, std)
+            ])
+        self.valid_augment = Compose([
+                ConvertFromInts(),
+                ToPercentCoords(),
+                Resize(self.size),
+                #SubtractMeans(self.mean)
+                Normalize(mean, std)
+            ])
 
-    new_image = image
-    new_bboxes = bboxes
-    new_labels = labels
-    new_difficulties = difficulties
-
-    if phase == 'train':
-        new_image = photometric_distort(new_image)
-
-        if random.random() < 0.5:
-            new_image, new_bboxes = expand(new_image, bboxes, mean)
-
-        new_image, new_bboxes, new_labels, new_difficulties = random_crop(new_image, new_bboxes, new_labels, new_difficulties)
-
-        if random.random() < 0.5:
-            new_image, new_bboxes = flip(new_image, new_bboxes)
-
-    new_image = new_image/255
-
-    new_image, new_bboxes = resize(new_image, new_bboxes, dims=(300, 300))
-
-    new_image = FT.normalize(new_image, mean, std)
-
-    return new_image, new_bboxes, new_labels, new_difficulties
+    def __call__(self, img, boxes, labels, difficulties, phase="train"):
+        if phase == "train":
+            return self.train_augment(img, boxes, labels, difficulties)
+        else:
+            return self.valid_augment(img, boxes, labels, difficulties)
