@@ -6,6 +6,7 @@ from box_utils import MultiBoxLoss
 def train(dataloader, model, criterion, optimizer):
 
     model.to("cuda")
+    dboxes = model.create_prior_boxes().to("cuda")
     iteration = -1
     while(1):
         for batch_images, batch_bboxes, batch_labels, batch_difficulties in dataloader: 
@@ -19,8 +20,7 @@ def train(dataloader, model, criterion, optimizer):
                 batch_labels[idx]       = batch_labels[idx].to("cuda")
                 batch_difficulties[idx] = batch_difficulties[idx].to("cuda")
 
-            loc, conf, dboxes = model(batch_images)
-            dboxes            = dboxes.to("cuda")
+            loc, conf = model(batch_images)
 
             loss = criterion(loc, conf, dboxes, batch_bboxes, batch_labels)
 

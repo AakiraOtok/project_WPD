@@ -349,7 +349,7 @@ class SSD(nn.Module):
         conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats = self.auxi_conv(conv7_feats)
 
         loc, conf                                                    = self.pred_conv(conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats)
-        return loc, conf, self.create_prior_boxes()
+        return loc, conf
 
 
 

@@ -111,8 +111,9 @@ class VOC_dataset(data.Dataset):
     def __len__(self):
         return len(self.img_path_list)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index, get_origin_image=False):
         image                        = cv2.imread(self.img_path_list[index])
+        origin_image                 = image.copy()
         bboxes, labels, difficulties = read_ann(self.ann_path_list[index])
         temp = []
         for label in labels:
@@ -128,7 +129,10 @@ class VOC_dataset(data.Dataset):
         labels       = torch.LongTensor(labels)
         difficulties = torch.LongTensor(difficulties)
 
-        return image, bboxes, labels, difficulties
+        if not get_origin_image:   
+            return image, bboxes, labels, difficulties
+        else:
+            return origin_image, image, bboxes, labels, difficulties
 
 
 class VOCUtils():

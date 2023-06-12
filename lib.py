@@ -7,11 +7,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import numpy as np
+import matplotlib.pyplot as plt
 import time
 import xml.etree.ElementTree as ET
 import os
 import cv2
 import random
 import sys
+from tqdm import tqdm 
 
 from math import sqrt
