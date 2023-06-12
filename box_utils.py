@@ -1,22 +1,48 @@
 from lib import *
 
-def draw_box(image, bboxes, labels, confidence_score=None, color=(0, 255, 0, 0.1), thickness=1, line_type=cv2.LINE_AA):
-    """
-    Vẽ bouding box
+# adapted from https://inside-machinelearning.com/en/bounding-boxes-python-function/
+# một chút sửa đổi để phù hợp với mục đích sử dụng
+def box_label(image, box, label=None, color=(128, 128, 128), txt_color=(255, 255, 255)):
+  """
+  :param image : [H, W, C] (BGR)
+  :param label : text, default = None
+  """
+  lw = max(round(sum(image.shape) / 2 * 0.003), 2)
+  p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
+  cv2.rectangle(image, p1, p2, color, thickness=lw, lineType=cv2.LINE_AA)
+  if label is not None:
+    tf = max(lw - 1, 1)  # font thickness
+    w, h = cv2.getTextSize(label, 0, fontScale=lw / 3, thickness=tf)[0]  # text width, height
+    outside = p1[1] - h >= 3
+    p2 = p1[0] + w, p1[1] - h - 3 if outside else p1[1] + h + 3
+    cv2.rectangle(image, p1, p2, color, -1, cv2.LINE_AA)  # filled
+    cv2.putText(image,
+                label, (p1[0], p1[1] - 2 if outside else p1[1] + h + 2),
+                0,
+                lw / 3,
+                txt_color,
+                thickness=tf,
+                lineType=cv2.LINE_AA)
 
-    param:
-    image  : numpy array [H, W, C]
-    bboxes : numpy arra
-    labels :
-    confidence_score :
-    """
+def draw_bounding_box(image, bboxes, labels, confs, map_labels):
+    if isinstance(image, torch.Tensor):
+        if image.dim() == 4:
+            image = image.squeeze(0)
+        image = image.permute(1, 2, 0)[:, :, (2, 1, 0)].contiguous()
+        image = image.detach().cpu().numpy()
+    
+    H, W, C = image.shape 
+    H -= 1
+    W -= 1
 
-    for box, label in zip(bboxes, labels):
-        p1 = (box[0], box[1])
-        p2 = (box[2], box[3])
-
-        cv2.rectangle(image, p1, p2, color, thickness, line_type)
-        cv2.putText(image, label, p1, cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+    for box, label, conf in zip(bboxes, labels, confs):
+        box[0] *= W
+        box[1] *= H
+        box[2] *= W
+        box[3] *= H
+        text    = map_labels[label] + " : " + str(round(conf*100, 2))
+        box_label(image, box, text)
+        
 
 def pascalVOC_style(boxes):
     """
