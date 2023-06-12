@@ -4,7 +4,7 @@ from lib import *
 # một chút sửa đổi để phù hợp với mục đích sử dụng
 def box_label(image, box, label=None, color=(128, 128, 128), txt_color=(255, 255, 255)):
   """
-  :param image : [H, W, C] (BGR)
+  :param image : np array [H, W, C] (BGR)
   :param label : text, default = None
   """
   lw = max(round(sum(image.shape) / 2 * 0.003), 2)
@@ -25,6 +25,15 @@ def box_label(image, box, label=None, color=(128, 128, 128), txt_color=(255, 255
                 lineType=cv2.LINE_AA)
 
 def draw_bounding_box(image, bboxes, labels, confs, map_labels):
+    """
+    Vẽ bouding box, đầu và image có thể là tensor hoặc np array tuỳ tình huống, đã thiết kế để xử lý cả 2 trường hợp
+    
+    :param image, tensor [1, 3, H, W] (RGB) hoặc numpy array [H, W, 3] (BGR)
+    :param bboxes, tensor [nbox, 4]
+    :param labels, tensor [nbox]
+    :param confs, tensor [nbox]
+    :param map_labels, dict, do labels là số nên cần map thành nhãn (string)
+    """
     if isinstance(image, torch.Tensor):
         if image.dim() == 4:
             image = image.squeeze(0)
@@ -35,13 +44,15 @@ def draw_bounding_box(image, bboxes, labels, confs, map_labels):
     H -= 1
     W -= 1
 
-    for box, label, conf in zip(bboxes, labels, confs):
-        box[0] *= W
-        box[1] *= H
-        box[2] *= W
-        box[3] *= H
-        text    = map_labels[label] + " : " + str(round(conf*100, 2))
-        box_label(image, box, text)
+    if bboxes is not None:
+        for box, label, conf in zip(bboxes, labels, confs):
+            box = box.clone().detach()
+            box[0] *= W
+            box[1] *= H
+            box[2] *= W
+            box[3] *= H
+            text    = str(map_labels[label.item()] + " : " + str(round(conf.item()*100, 2)))
+            box_label(image, box, text)
         
 
 def pascalVOC_style(boxes):

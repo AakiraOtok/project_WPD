@@ -16,24 +16,9 @@ def detect(dataset, model):
         conf   = conf.to("cuda")
         pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset[0], conf[0], conf_threshold=0.5, iou_threshold=0.45, top_k=200)
 
-        draw_bounding_box(origin_image, pred_bboxes, pred_labels, pred_confs, class_direct_map)
+        draw_bounding_box(origin_image, pred_bboxes, pred_labels, pred_confs, class_inverse_map)
         cv2.imshow("img", origin_image)
         cv2.waitKey()
-        #bboxes = pred_bboxes
-        #labels = pred_labels
-        
-        #H, W, C = origin_image.shape
-        #H -= 1
-        #W -= 1
-
-        #if bboxes is not None:
-            #for box, label in zip(bboxes, labels):
-                #p1 = (int(box[0]*W), int(box[1]*H))
-                #p2 = (int(box[2]*W), int(box[3]*H))
-                #cv2.rectangle(origin_image, p1, p2, (0, 255, 0), 1)
-                #cv2.putText(origin_image, class_inverse_map[label.item()], p1, 1, 1, (0, 255, 0), 1)
-        #cv2.imshow("img", origin_image)
-        #cv2.waitKey()
 
 
 if __name__ == "__main__":
