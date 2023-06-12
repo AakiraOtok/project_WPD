@@ -1,7 +1,7 @@
-from lib import *
-from VOC_utils import VOCUtils, collate_fn
+from utils.lib import *
+from utils.VOC_utils import VOCUtils, collate_fn
 from model import SSD
-from box_utils import MultiBoxLoss
+from utils.box_utils import MultiBoxLoss
 
 def train(dataloader, model, criterion, optimizer):
 

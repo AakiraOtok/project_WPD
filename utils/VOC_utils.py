@@ -1,5 +1,5 @@
-from lib import *
-from augmentations_utils import CustomAugmentation
+from utils.lib import *
+from utils.augmentations_utils import CustomAugmentation
 
 class_direct_map = {
     'aeroplane'   : 1,

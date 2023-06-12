@@ -1,4 +1,4 @@
-from lib import *
+from utils.lib import *
 
 # adapted from https://inside-machinelearning.com/en/bounding-boxes-python-function/
 # một chút sửa đổi để phù hợp với mục đích sử dụng

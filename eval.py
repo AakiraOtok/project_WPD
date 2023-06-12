@@ -1,7 +1,7 @@
-from lib import *
+from utils.lib import *
 from model import SSD
-from VOC_utils import VOCUtils
-from box_utils import Non_Maximum_Suppression, jaccard
+from utils.VOC_utils import VOCUtils
+from utils.box_utils import Non_Maximum_Suppression, jaccard
 
 def show(img, boxes, confs=None):
     """

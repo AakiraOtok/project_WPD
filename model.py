@@ -1,5 +1,5 @@
-from lib import *
-from box_utils import pascalVOC_style, yolo_style
+from utils.lib import *
+from utils.box_utils import pascalVOC_style, yolo_style
 
 class VGG16Base(nn.Module):
     """

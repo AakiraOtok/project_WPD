@@ -1,7 +1,7 @@
-from lib import *
+from utils.lib import *
 from model import SSD
-from VOC_utils import VOCUtils, collate_fn, class_inverse_map, class_direct_map
-from box_utils import Non_Maximum_Suppression, draw_bounding_box
+from utils.VOC_utils import VOCUtils, collate_fn, class_inverse_map, class_direct_map
+from utils.box_utils import Non_Maximum_Suppression, draw_bounding_box
 
 def detect(dataset, model):
     model.to("cuda")
