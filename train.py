@@ -4,14 +4,19 @@ from model import SSD
 from utils.box_utils import MultiBoxLoss
 
 def train(dataloader, model, criterion, optimizer):
-
+    torch.backends.cudnn.benchmark = True
     model.to("cuda")
     dboxes = model.create_prior_boxes().to("cuda")
     iteration = -1
+    cur_lr = 1e-3
     while(1):
         for batch_images, batch_bboxes, batch_labels, batch_difficulties in dataloader: 
             iteration += 1
             t_batch = time.time()
+            if iteration in (80000, 100000):
+                cur_lr *= 0.1
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = cur_lr
 
             batch_size   = batch_images.shape[0]
             batch_images = batch_images.to("cuda")
@@ -30,16 +35,24 @@ def train(dataloader, model, criterion, optimizer):
             optimizer.step()
 
             print("iteration : {}, time = {}, loss = {}".format(iteration + 1, round(time.time() - t_batch, 2), loss))
-                # save lại mỗi 1000 iteration
-            if (iteration + 1) % 1000 == 0:
+                # save lại mỗi 10000 iteration
+            if (iteration + 1) % 10000 == 0:
                 torch.save(model.state_dict(), r"H:\projectWPD\VOC2007_trainval_checkpoint\iteration_" + str(iteration + 1) + ".pth")
                 print("Saved model at iteration : {}".format(iteration + 1))
+                if iteration + 1 == 120000:
+                    sys.exit()
 
 
 if __name__ == "__main__":
     data_folder_path = r"H:\projectWPD\data"
+    voc              = VOCUtils(data_folder_path)
+    
+    dataset1         = voc.make_dataset(r"VOC2007", r"trainval.txt")
+    dataset2         = voc.make_dataset(r"VOC2012", r"trainval.txt")
+    dataset          = data.ConcatDataset([dataset1, dataset2])
 
-    dataloader = VOCUtils(data_folder_path).make_dataloader(r"VOC2007", r"trainval.txt", 32, True, collate_fn, phase='train',num_worker=4, pin_memory=True)
+    dataloader       = data.DataLoader(dataset, 32, True, num_workers=4, collate_fn=collate_fn, pin_memory=True)
+
     model      = SSD(n_classes=21)
     criterion  = MultiBoxLoss(num_classes=21)
     optimizer  = optim.SGD(model.parameters(), lr=1e-3, momentum=0.9, weight_decay=5e-4)

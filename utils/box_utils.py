@@ -47,10 +47,10 @@ def draw_bounding_box(image, bboxes, labels, confs, map_labels):
     if bboxes is not None:
         for box, label, conf in zip(bboxes, labels, confs):
             box = box.clone().detach()
-            box[0] *= W
-            box[1] *= H
-            box[2] *= W
-            box[3] *= H
+            box[0] = max(0, int(box[0]*W))
+            box[1] = max(0, int(box[1]*H))
+            box[2] = min(W, int(box[2]*W))
+            box[3] = min(H, int(box[3]*H))
             text    = str(map_labels[label.item()] + " : " + str(round(conf.item()*100, 2)))
             box_label(image, box, text)
         
@@ -194,11 +194,15 @@ class MultiBoxLoss(nn.Module):
 
         conf_loss = F.cross_entropy(conf_p.view(-1, self.num_classes), labels_t.view(-1), reduction="none")
         conf_loss = conf_loss.view(batch_size, nbox)
-        _, idx    = torch.sort(conf_loss, dim=1, descending=True)
-        _, idx    = torch.sort(idx, dim=1)
-        neg_mask      = idx < num_neg.unsqueeze(-1)
 
-        loss_c = conf_loss[pos_mask + neg_mask].sum()
+        pos_loss_c          = conf_loss[pos_mask].sum()
+
+        conf_loss[pos_mask] = 0
+        _, idx              = torch.sort(conf_loss, dim=1, descending=True)
+        _, idx              = torch.sort(idx, dim=1)
+        neg_mask            = idx < num_neg.unsqueeze(-1)
+        neg_loss_c          = conf_loss[neg_mask].sum()
+        loss_c = pos_loss_c + neg_loss_c
 
 
         return (loss_l + loss_c)/num_pos.sum()

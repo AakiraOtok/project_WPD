@@ -183,7 +183,6 @@ class VOCUtils():
         dataset    = self.make_dataset(version, file_txt, CustomAugmentation(), phase)
         dataloader = data.DataLoader(dataset, batch_size, shuffle, num_workers=num_worker, collate_fn=collate_fn, pin_memory=pin_memory) 
         return dataloader
-    
 
 if __name__ == "__main__":
     data_folder_path = r"H:\projectWPD\data"

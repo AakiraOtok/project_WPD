@@ -3,23 +3,40 @@ from model import SSD
 from utils.VOC_utils import VOCUtils
 from utils.box_utils import Non_Maximum_Suppression, jaccard
 
-def show(img, boxes, confs=None):
+def voc_ap(rec, prec, use_07_metric=True):
+    """ ap = voc_ap(rec, prec, [use_07_metric])
+    Compute VOC AP given precision and recall.
+    If use_07_metric is true, uses the
+    VOC 07 11 point method (default:True).
     """
-    img có shape là [1, C, H, W] với C đang là RGB
-    """
-    img = img.squeeze(0).detach().permute(1, 2, 0)[:, :, (2, 1, 0)].cpu().numpy()
-    for i in range(boxes.shape[0]):
-        box = boxes[i]
-        p1 = (int(box[0]*300), int(box[1]*300))
-        p2 = (int(box[2]*300), int(box[3]*300))
-        cv2.rectangle(img, p1, p2, (0, 0, 255), 1)
+    rec = rec.detach().cpu().numpy()
+    prec = prec.detach().cpu().numpy()
+    if use_07_metric:
+        # 11 point metric
+        ap = 0.
+        for t in np.arange(0., 1.1, 0.1):
+            if np.sum(rec >= t) == 0:
+                p = 0
+            else:
+                p = np.max(prec[rec >= t])
+            ap = ap + p / 11.
+    else:
+        # correct AP calculation
+        # first append sentinel values at the end
+        mrec = np.concatenate(([0.], rec, [1.]))
+        mpre = np.concatenate(([0.], prec, [0.]))
 
-        if confs is not None:
-            conf = confs[i]
-            cv2.putText(img, str(round(100*conf.item())), p1, 1, 1, (0, 0, 255), 1, 1)
-            
-    cv2.imwrite(r"H:\projectWPD\show_img.jpg", img)
-    sys.exit()
+        # compute the precision envelope
+        for i in range(mpre.size - 1, 0, -1):
+            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+        # to calculate area under PR curve, look for points
+        # where X axis (recall) changes value
+        i = np.where(mrec[1:] != mrec[:-1])[0]
+
+        # and sum (\Delta recall) * prec
+        ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    return ap
 
 def calc_APs(model, dataset, threshold=0.5):
     """
@@ -141,7 +158,8 @@ def calc_APs(model, dataset, threshold=0.5):
             precision = torch.cat((torch.tensor([1]).to("cuda"), precision))
             recall    = torch.cat((torch.tensor([0]).to("cuda"), recall))
 
-            APs[cur_class] = torch.trapz(precision, recall)
+            #APs[cur_class] = torch.trapz(precision, recall)
+            APs[cur_class] = voc_ap(recall, precision)
             
             print(torch.sum(TP[cur_class]))
             print(torch.sum(FP[cur_class]))
