@@ -19,7 +19,8 @@ def voc_ap(rec, prec, use_07_metric=True):
                 p = 0
             else:
                 p = np.max(prec[rec >= t])
-            ap = ap + p / 11.
+            ap = ap + p
+        ap /= 11
     else:
         # correct AP calculation
         # first append sentinel values at the end
@@ -136,7 +137,7 @@ def calc_APs(model, dataset, threshold=0.5):
         APs = torch.zeros(num_classes).to("cuda")
 
         # Tránh chia cho 0
-        epsilon = 1e-6
+        epsilon = 1e-10
     
         # Tính AP cho mỗi class
         for cur_class in range(1, num_classes):

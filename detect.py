@@ -14,7 +14,7 @@ def detect(dataset, model):
         offset, conf = model(images)
         offset = offset.to("cuda")
         conf   = conf.to("cuda")
-        pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset[0], conf[0], conf_threshold=0.5, iou_threshold=0.45, top_k=200)
+        pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset[0], conf[0], conf_threshold=0.2, iou_threshold=0.45, top_k=200)
 
         draw_bounding_box(origin_image, pred_bboxes, pred_labels, pred_confs, class_inverse_map)
         cv2.imshow("img", origin_image)

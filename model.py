@@ -332,14 +332,14 @@ class SSD(nn.Module):
                             try:
                                 scale = sqrt(scale*box_scales[idx + 1])
                             except IndexError:
-                                scale = 1
+                                scale = 1.
                             dboxes.append([cx, cy, scale*sqrt(aspect_ratio), scale/sqrt(aspect_ratio)])
 
         dboxes = torch.FloatTensor(dboxes)
         
-        dboxes = pascalVOC_style(dboxes)
+        #dboxes = pascalVOC_style(dboxes)
         dboxes.clamp_(0, 1)
-        dboxes = yolo_style(dboxes)
+        #dboxes = yolo_style(dboxes)
                 
         return dboxes
 

@@ -8,15 +8,14 @@ def train(dataloader, model, criterion, optimizer):
     model.to("cuda")
     dboxes = model.create_prior_boxes().to("cuda")
     iteration = -1
-    cur_lr = 1e-3
+
     while(1):
         for batch_images, batch_bboxes, batch_labels, batch_difficulties in dataloader: 
             iteration += 1
             t_batch = time.time()
             if iteration in (80000, 100000):
-                cur_lr *= 0.1
                 for param_group in optimizer.param_groups:
-                    param_group['lr'] = cur_lr
+                    param_group['lr'] *= 0.1
 
             batch_size   = batch_images.shape[0]
             batch_images = batch_images.to("cuda")
@@ -55,5 +54,16 @@ if __name__ == "__main__":
 
     model      = SSD(n_classes=21)
     criterion  = MultiBoxLoss(num_classes=21)
-    optimizer  = optim.SGD(model.parameters(), lr=1e-3, momentum=0.9, weight_decay=5e-4)
+
+    biases     = []
+    not_biases = []
+    for param_name, param in model.named_parameters():
+        if param.requires_grad:
+            if param_name.endswith('bias'):
+                biases.append(param)
+            else:
+                not_biases.append(param)
+
+    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
+
     train(dataloader, model, criterion, optimizer)
