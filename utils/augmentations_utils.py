@@ -455,7 +455,7 @@ class CustomAugmentation():
                 Normalize(mean, std)
             ])
 
-    def __call__(self, img, boxes, labels, difficulties, phase="train"):
+    def __call__(self, img, boxes=None, labels=None, difficulties=None, phase="train"):
         if phase == "train":
             return self.train_augment(img, boxes, labels, difficulties)
         else:
