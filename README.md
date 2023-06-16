@@ -18,16 +18,21 @@ update note này thường xuyên nhất có thể
 
 ### Môi trường
 
-python = 3.10.11
-cuda   = 11.8
+```python = 3.10.11```
+
+```cuda   = 11.8```
 
 
 ### pakage
-pytorch    = 2.0.1
-cv2        = 4.7.0
-tqdm       = 4.65.0
-numpy      = 1.24.3
-matplotlib = 3.7.1
+```pytorch = 2.0.1```
+
+```cv2 = 4.7.0```
+
+```tqdm = 4.65.0```
+
+```numpy = 1.24.3```
+
+```matplotlib = 3.7.1```
 
 Để cho đơn giản thì mọi người cứ tải phiên bản mới nhất của các pagkage trên là được.
 
@@ -43,4 +48,5 @@ Mọi người đã có thể clone về và run file live.py (sử dụng camer
 - Cài đặt môi trường và các package như đã nêu ở trên
 - Tải về checkpoint tại : https://drive.google.com/file/d/1zBVFvuIhpvnVwGYmu82osUu71ugGF_zb/view?usp=sharing
 - Ở file live.py, sửa pretrain_path lại thành đường dẫn checkpoint vừa tải về
+
 Sau khi thực hiện các bước ở trên, bạn đã có thể test thử model rồi.
