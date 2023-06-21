@@ -1,9 +1,10 @@
 from utils.lib import *
 from utils.VOC_utils import VOCUtils, collate_fn
-from model import SSD
+from utils.COCO_utils import COCOUtils, COCO_collate_fn
+from model.SSD300 import SSD
 from utils.box_utils import MultiBoxLoss
 
-def train(dataloader, model, criterion, optimizer):
+def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000), max_iter=200000):
     torch.backends.cudnn.benchmark = True
     model.to("cuda")
     dboxes = model.create_prior_boxes().to("cuda")
@@ -13,7 +14,7 @@ def train(dataloader, model, criterion, optimizer):
         for batch_images, batch_bboxes, batch_labels, batch_difficulties in dataloader: 
             iteration += 1
             t_batch = time.time()
-            if iteration in (80000, 100000):
+            if iteration in adjustlr_schedule:
                 for param_group in optimizer.param_groups:
                     param_group['lr'] *= 0.1
 
@@ -36,24 +37,36 @@ def train(dataloader, model, criterion, optimizer):
             print("iteration : {}, time = {}, loss = {}".format(iteration + 1, round(time.time() - t_batch, 2), loss))
                 # save lại mỗi 10000 iteration
             if (iteration + 1) % 10000 == 0:
-                torch.save(model.state_dict(), r"H:\projectWPD\VOC2007_trainval_checkpoint\iteration_" + str(iteration + 1) + ".pth")
+                torch.save(model.state_dict(), r"H:\projectWPD\COCO_trainval35_checkpoint\iteration_" + str(iteration + 1) + ".pth")
                 print("Saved model at iteration : {}".format(iteration + 1))
-                if iteration + 1 == 120000:
+                if iteration + 1 == max_iter:
                     sys.exit()
 
 
 if __name__ == "__main__":
-    data_folder_path = r"H:\projectWPD\data"
-    voc              = VOCUtils(data_folder_path)
+    #data_folder_path = r"H:\projectWPD\data"
+    #voc              = VOCUtils(data_folder_path)
     
-    dataset1         = voc.make_dataset(r"VOC2007", r"trainval.txt")
-    dataset2         = voc.make_dataset(r"VOC2012", r"trainval.txt")
-    dataset          = data.ConcatDataset([dataset1, dataset2])
+    #dataset1         = voc.make_dataset(r"VOC2007", r"trainval.txt")
+    #dataset2         = voc.make_dataset(r"VOC2012", r"trainval.txt")
+    #dataset          = data.ConcatDataset([dataset1, dataset2])
 
-    dataloader       = data.DataLoader(dataset, 32, True, num_workers=4, collate_fn=collate_fn, pin_memory=True)
+    #dataloader       = data.DataLoader(dataset, 32, True, num_workers=4, collate_fn=collate_fn, pin_memory=True)
 
-    model      = SSD(n_classes=21)
-    criterion  = MultiBoxLoss(num_classes=21)
+    train_folder_path  = r"H:\data\COCO\train2014"
+    val35k_folder_path = r"H:\data\COCO\val2014"
+    train_file         = r"H:\data\COCO\instances_train2014.json"
+    val35k_file        = r"H:\data\COCO\instances_valminusminival2014.json"
+ 
+    train  = COCOUtils(train_folder_path, train_file).make_dataset(phase="train")
+    val35k = COCOUtils(val35k_folder_path, val35k_file).make_dataset(phase="train")
+    dataset = data.ConcatDataset([train, val35k])
+    dataloader = data.DataLoader(dataset, 32, True, collate_fn=COCO_collate_fn, num_workers=8, pin_memory=True)
+
+    #model      = SSD(n_classes=21)
+    model      = SSD(data_train_on="COCO", n_classes=81)
+    #criterion  = MultiBoxLoss(num_classes=21)
+    criterion  = MultiBoxLoss(num_classes=81)
 
     biases     = []
     not_biases = []
@@ -66,4 +79,4 @@ if __name__ == "__main__":
 
     optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
-    train(dataloader, model, criterion, optimizer)
+    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(320000, 400000), max_iter=480000)

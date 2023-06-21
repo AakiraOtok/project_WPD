@@ -275,10 +275,11 @@ class L2Norm(nn.Module):
     
 class SSD(nn.Module):
 
-    def __init__(self, pretrain_path = None, n_classes = 21):
+    def __init__(self, pretrain_path = None, data_train_on = "VOC", n_classes = 21):
         super().__init__()
 
         self.n_classes   = n_classes
+        self.data_train_on = data_train_on
         self.base_net    = VGG16Base()
         self.auxi_conv   = AuxiliraryConvolutions()
         self.pred_conv   = PredictionConvolutions(n_classes) 
@@ -304,17 +305,22 @@ class SSD(nn.Module):
         # Ở mục 3.1, trang 7 : 
         # "We set default box with scale 0.1 on conv4 3 .... "
         # "For SSD512 model, we add extra conv12 2 for prediction, set smin to 0.15, and 0.07 on conv4 3...""
-        box_scales    = [0.1, 0.2, 0.375, 0.55, 0.725, 0.9]
-        aspect_ratios = [
-            [1., 2., 0.5],
-            [1., 2., 3., 0.5, 0.333],
-            [1., 2., 3., 0.5, 0.333],
-            [1., 2., 3., 0.5, 0.333],
-            [1., 2., 0.5],
-            [1., 2., 0.5]
-        ]
 
+        if self.data_train_on == "VOC":
+            box_scales    = [0.1, 0.2, 0.375, 0.55, 0.725, 0.9]
+        elif self.data_train_on == "COCO":
+            box_scales    = [0.07, 0.15, 0.3375, 0.525, 0.7125, 0.9] 
+            
+        aspect_ratios = [
+                [1., 2., 0.5],
+                [1., 2., 3., 0.5, 0.333],
+                [1., 2., 3., 0.5, 0.333],
+                [1., 2., 3., 0.5, 0.333],
+                [1., 2., 0.5],
+                [1., 2., 0.5]
+            ]
         dboxes = []
+        
         
         for idx, fmap_size in enumerate(fmap_sizes):
             for i in range(fmap_size):

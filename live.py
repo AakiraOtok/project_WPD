@@ -1,5 +1,5 @@
 from utils.lib import *
-from model import SSD
+from model.SSD300 import SSD
 from utils.box_utils import draw_bounding_box, Non_Maximum_Suppression
 from utils.VOC_utils import class_direct_map, class_inverse_map
 from utils.augmentations_utils import CustomAugmentation

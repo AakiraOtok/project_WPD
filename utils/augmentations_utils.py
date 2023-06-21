@@ -459,5 +459,7 @@ class CustomAugmentation():
     def __call__(self, img, boxes=None, labels=None, difficulties=None, phase="train"):
         if phase == "train":
             return self.train_augment(img, boxes, labels, difficulties)
-        else:
+        elif phase == "valid":
             return self.valid_augment(img, boxes, labels, difficulties)
+        elif phase == "nothing":
+            return img, boxes, labels, difficulties

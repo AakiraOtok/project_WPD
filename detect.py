@@ -1,5 +1,5 @@
 from utils.lib import *
-from model import SSD
+from model.SSD300 import SSD
 from utils.VOC_utils import VOCUtils, collate_fn, class_inverse_map, class_direct_map
 from utils.box_utils import Non_Maximum_Suppression, draw_bounding_box
 

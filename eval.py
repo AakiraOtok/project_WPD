@@ -1,6 +1,7 @@
 from utils.lib import *
-from model import SSD
+from model.SSD300 import SSD
 from utils.VOC_utils import VOCUtils
+from utils.COCO_utils import COCOUtils
 from utils.box_utils import Non_Maximum_Suppression, jaccard
 
 def voc_ap(rec, prec, use_07_metric=True):
@@ -39,7 +40,7 @@ def voc_ap(rec, prec, use_07_metric=True):
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
-def calc_APs(model, dataset, threshold=0.5):
+def calc_APs(model, dataset, threshold=0.5, num_classes=21):
     """
     tính APs và mAP của model, trả về 1 tensor gồm [nclass] phần tử
     """
@@ -49,7 +50,6 @@ def calc_APs(model, dataset, threshold=0.5):
     # Tạo test dataloader, xử lý từng bức ảnh (batch_size=1)
     #dataloader = VOC_create_test_dataloader(batch_size=1, shuffle=0, data_folder_path=r"H:\projectWPD\data", version=r"VOC2007", id_txt_file=r"test.txt")
     dboxes = model.create_prior_boxes().to("cuda")
-    num_classes = 21
 
     # List chứa [nclass] list thành phần khác, mỗi list thành phần thứ i là các tensor TP/FP/confidence cho class thứ i
     TP     = [[] for _ in range(num_classes)]
@@ -74,10 +74,10 @@ def calc_APs(model, dataset, threshold=0.5):
             offset, conf = model(img)
 
             offset.squeeze_(0) # [1, 8732, 4]  ->  [8732, 4]
-            conf.squeeze_(0)   # [1, 8732, 21] ->  [8732, 21]
+            conf.squeeze_(0)   # [1, 8732, num_classes] ->  [8732, num_classes]
             
             # [nbox, 4], [nbox]     ,  [nbox], nếu không có box được tìm thấy thì trả về None
-            pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset, conf, iou_threshold=0.45)
+            pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset, conf, iou_threshold=0.45, num_classes=num_classes)
 
             # sort lại theo confidence score
             if (pred_bboxes != None):
@@ -137,7 +137,7 @@ def calc_APs(model, dataset, threshold=0.5):
         APs = torch.zeros(num_classes).to("cuda")
 
         # Tránh chia cho 0
-        epsilon = 1e-10
+        epsilon = 1e-5
     
         # Tính AP cho mỗi class
         for cur_class in range(1, num_classes):
@@ -171,12 +171,12 @@ def calc_APs(model, dataset, threshold=0.5):
 
 if __name__ == "__main__":
     data_folder_path = r"H:\projectWPD\data"
-    pretrain_path    = r"H:\projectWPD\VOC2007_trainval_checkpoint\iteration_120000.pth"
+    pretrain_path    = "H:\projectWPD\COCO_trainval35_checkpoint\iteration_480000.pth"
     
-    model = SSD(pretrain_path, n_classes=21)
-    dataset = VOCUtils(data_folder_path).make_dataset(r"VOC2007", r"test.txt", phase="valid")
+    model = SSD(pretrain_path, data_train_on="COCO", n_classes=81)
+    dataset = COCOUtils(r"H:\data\COCO\val2014", r"H:\data\COCO\instances_minival2014.json").make_dataset(phase="valid")
 
-    APs = calc_APs(model, dataset)
+    APs = calc_APs(model, dataset, num_classes=81)
     APs = APs[1:] # bỏ background
     print(APs)
     print(APs.mean())

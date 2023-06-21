@@ -80,7 +80,8 @@ def yolo_style(boxes):
 # encode (giải thích trên hackmd)
 def encode_variance(dboxes, bboxes, variances=[0.1, 0.2]):
     return torch.cat(((bboxes[:, :2] - dboxes[:, :2])/(dboxes[:, 2:]*variances[0]), 
-                      torch.log(bboxes[:, 2:]/dboxes[:, 2:])/variances[1]), dim=1)
+                      torch.log(bboxes[:, 2:]/dboxes[:, 2:] + 1e-5)/variances[1]), dim=1)
+                    # torch.log có thể bị inf, add thêm eps = 1e-5
 
 # decode (giải thích trên hackmd)
 def decode_variance(dboxes, loc, variances=[0.1, 0.2]):
@@ -204,8 +205,7 @@ class MultiBoxLoss(nn.Module):
         neg_loss_c          = conf_loss[neg_mask].sum()
         loss_c = pos_loss_c + neg_loss_c
 
-
-        return (loss_l + loss_c)/num_pos.sum()
+        return (loss_l + loss_c)/(num_pos.sum() + 1e-5)
 
 
 
@@ -255,7 +255,7 @@ def nms(bboxes, conf, conf_threshold=0.01, iou_threshold=0.45):
     
     return torch.stack(ret_bboxes, dim=0), torch.cat(ret_conf)
 
-def Non_Maximum_Suppression(dboxes, offset, conf, conf_threshold=0.01, iou_threshold=0.45, top_k=200):
+def Non_Maximum_Suppression(dboxes, offset, conf, conf_threshold=0.01, iou_threshold=0.45, top_k=200, num_classes=21):
     #"""
     #Thực hiện thuật toán non maximum sppression
     #Đầu vào :
@@ -280,7 +280,6 @@ def Non_Maximum_Suppression(dboxes, offset, conf, conf_threshold=0.01, iou_thres
     pred_bboxes = [] 
     pred_labels = []
     pred_confs  = []
-    num_classes = 21
 
     for cur_class in range(1, num_classes): # bỏ class 0 là background
         nms_bboxes, nms_conf = nms(bboxes, conf[:, cur_class], conf_threshold, iou_threshold)
