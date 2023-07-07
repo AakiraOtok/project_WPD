@@ -164,8 +164,8 @@ def calc_APs(model, dataset, threshold=0.5, num_classes=21):
             
             print(torch.sum(TP[cur_class]))
             print(torch.sum(FP[cur_class]))
-            plt.plot(recall.detach().cpu().numpy(), precision.detach().cpu().numpy())
-            plt.show()
+            #plt.plot(recall.detach().cpu().numpy(), precision.detach().cpu().numpy())
+            #plt.show()
 
         return APs
 

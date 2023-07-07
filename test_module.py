@@ -20,5 +20,5 @@ from utils.COCO_utils import COCOUtils
 #idx2name = dict(zip(idx, name))
 #print(ori_idx2idx)
 
-dataset = COCOUtils(r"H:\data\COCO\val2014", r"H:\data\COCO\instances_minival2014.json").make_dataset(phase="valid")
-print(len(dataset))
+#dataset = COCOUtils(r"H:\data\COCO\val2014", r"H:\data\COCO\instances_minival2014.json").make_dataset(phase="valid")
+#print(len(dataset))
