@@ -1,7 +1,7 @@
 from utils.lib import *
 from utils.VOC_utils import VOCUtils, collate_fn
 from utils.COCO_utils import COCOUtils, COCO_collate_fn
-from model.SSD300 import SSD
+from model.SSD300 import SSD300
 from model.SSD512 import SSD512
 from utils.box_utils import MultiBoxLoss
 from utils.augmentations_utils import CustomAugmentation
@@ -44,33 +44,50 @@ def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(8000
                 if iteration + 1 == max_iter:
                     sys.exit()
 
+def train_on_COCO(size=300, pretrain_path=None):
+    train_folder_path  = r"H:\data\COCO\train2014"
+    val35k_folder_path = r"H:\data\COCO\val2014"
+    train_file         = r"H:\data\COCO\instances_train2014.json"
+    val35k_file        = r"H:\data\COCO\instances_valminusminival2014.json"
+ 
+    train      = COCOUtils(train_folder_path, train_file).make_dataset(phase="train", transform=CustomAugmentation(size=size))
+    val35k     = COCOUtils(val35k_folder_path, val35k_file).make_dataset(phase="train", transform=CustomAugmentation(size=size))
+    dataset    = data.ConcatDataset([train, val35k])
+    dataloader = data.DataLoader(dataset, 32, True, collate_fn=COCO_collate_fn, num_workers=6, pin_memory=True)
 
-if __name__ == "__main__":
+    if size==300:
+        model = SSD300(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
+    elif size==512:
+        model = SSD512(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
+
+    criterion  = MultiBoxLoss(num_classes=81)
+
+    return dataloader, model, criterion
+
+def train_on_VOC(size=300, pretrain_path=None):
     data_folder_path = r"H:\projectWPD\data"
     voc              = VOCUtils(data_folder_path)
     
-    dataset1         = voc.make_dataset(r"VOC2007", r"trainval.txt", transform=CustomAugmentation(size=512))
-    dataset2         = voc.make_dataset(r"VOC2012", r"trainval.txt", transform=CustomAugmentation(size=512))
+    dataset1         = voc.make_dataset(r"VOC2007", r"trainval.txt", transform=CustomAugmentation(size=size))
+    dataset2         = voc.make_dataset(r"VOC2012", r"trainval.txt", transform=CustomAugmentation(size=size))
     dataset          = data.ConcatDataset([dataset1, dataset2])
 
-    dataloader       = data.DataLoader(dataset, 32, True, num_workers=4, collate_fn=collate_fn, pin_memory=True)
+    dataloader       = data.DataLoader(dataset, 32, True, num_workers=6, collate_fn=collate_fn, pin_memory=True)
 
-    #train_folder_path  = r"H:\data\COCO\train2014"
-    #val35k_folder_path = r"H:\data\COCO\val2014"
-    #train_file         = r"H:\data\COCO\instances_train2014.json"
-    #val35k_file        = r"H:\data\COCO\instances_valminusminival2014.json"
- 
-    #train  = COCOUtils(train_folder_path, train_file).make_dataset(phase="train")
-    #val35k = COCOUtils(val35k_folder_path, val35k_file).make_dataset(phase="train")
-    #dataset = data.ConcatDataset([train, val35k])
-    #dataloader = data.DataLoader(dataset, 32, True, collate_fn=COCO_collate_fn, num_workers=6, pin_memory=True)
+    if size==300:
+        model = SSD300(n_classes=21, pretrain_path=pretrain_path)
+    elif size==512:
+        model = SSD512(n_classes=21, pretrain_path=pretrain_path)
 
-    #pretrain_path = r"H:\projectWPD\COCO_trainval35_checkpoint\iteration_480000.pth"
-    #model      = SSD(data_train_on="COCO", n_classes=81)
-    #criterion  = MultiBoxLoss(num_classes=81)
-
-    model      = SSD512(n_classes=21)
     criterion  = MultiBoxLoss(num_classes=21)
+
+    return dataloader, model, criterion
+
+
+if __name__ == "__main__":
+
+    dataloader, model, criterion = train_on_VOC()
+    #dataloader, model, criterion = train_on_COCO()
 
     biases     = []
     not_biases = []

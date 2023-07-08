@@ -1,8 +1,10 @@
 from utils.lib import *
-from model.SSD300 import SSD
+from model.SSD300 import SSD300
+from model.SSD512 import SSD512
 from utils.VOC_utils import VOCUtils
 from utils.COCO_utils import COCOUtils
 from utils.box_utils import Non_Maximum_Suppression, jaccard
+from utils.augmentations_utils import CustomAugmentation
 
 def voc_ap(rec, prec, use_07_metric=True):
     """ ap = voc_ap(rec, prec, [use_07_metric])
@@ -168,15 +170,38 @@ def calc_APs(model, dataset, threshold=0.5, num_classes=21):
             #plt.show()
 
         return APs
+    
+def eval_on_VOC(pretrain_path, size=300):
+    data_folder_path = r"H:\projectWPD\data"
+    dataset    = VOCUtils(data_folder_path).make_dataset(r"VOC2007", r"test.txt", phase="valid", transform=CustomAugmentation(size=size))
+
+    if size==300:
+        model      = SSD300(pretrain_path=pretrain_path, n_classes=21)
+    elif size==512:
+        model      = SSD512(pretrain_path=pretrain_path, n_classes=21)
+
+    return dataset, model
+
+def eval_on_COCO(pretrain_path, size=300):
+    dataset = COCOUtils(r"H:\data\COCO\val2014", r"H:\data\COCO\instances_minival2014.json").make_dataset(phase="valid", transform=CustomAugmentation(size=size))
+
+    if size==300:
+        model = SSD300(pretrain_path, data_train_on="COCO", n_classes=81)
+    elif size==512:
+        model = SSD512(pretrain_path, data_train_on="COCO", n_classes=81)
+    
+    return dataset, model
 
 if __name__ == "__main__":
-    data_folder_path = r"H:\projectWPD\data"
-    pretrain_path    = "H:\projectWPD\COCO_trainval35_checkpoint\iteration_480000.pth"
-    
-    model = SSD(pretrain_path, data_train_on="COCO", n_classes=81)
-    dataset = COCOUtils(r"H:\data\COCO\val2014", r"H:\data\COCO\instances_minival2014.json").make_dataset(phase="valid")
 
-    APs = calc_APs(model, dataset, num_classes=81)
+    pretrain_path = r"H:\project_WPD\iteration_30000.pth"
+    size          = 512
+    num_classes   = 21
+
+    dataset, model = eval_on_VOC(pretrain_path, size=size)
+    #dataset, model = eval_on_COCO(pretrain_path, size=size)
+
+    APs = calc_APs(model, dataset, num_classes=num_classes)
     APs = APs[1:] # bỏ background
     print(APs)
     print(APs.mean())

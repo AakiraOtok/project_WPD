@@ -273,7 +273,7 @@ class L2Norm(nn.Module):
         tensor = tensor/(norm + self.eps)*self.scale_factors
         return tensor
     
-class SSD(nn.Module):
+class SSD300(nn.Module):
 
     def __init__(self, pretrain_path = None, data_train_on = "VOC", n_classes = 21):
         super().__init__()

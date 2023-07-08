@@ -1,11 +1,12 @@
 from utils.lib import *
-from model.SSD300 import SSD
+from model.SSD300 import SSD300
+from model.SSD512 import SSD512
 from utils.box_utils import draw_bounding_box, Non_Maximum_Suppression
 from utils.VOC_utils import class_direct_map, class_inverse_map
 from utils.augmentations_utils import CustomAugmentation
 from collections import deque
 
-def live_cam(model, cam):
+def live_cam(model, cam, size=300, num_classes=21):
     model.to("cuda")
     dboxes = model.create_prior_boxes().to("cuda")
     d = deque()
@@ -15,14 +16,14 @@ def live_cam(model, cam):
         if not ret:
             break
 
-        aug = CustomAugmentation()
+        aug = CustomAugmentation(size=size)
     
         transformed_img, _1, _2, _3 = aug(img, phase="valid")
         transformed_img        = torch.FloatTensor(transformed_img[:, :, (2, 1, 0)]).permute(2, 0, 1).contiguous().to("cuda")
 
         offset, conf = model(transformed_img.unsqueeze(0))
         
-        pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset[0], conf[0], conf_threshold=0.2, iou_threshold=0.45, top_k=200)
+        pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset[0], conf[0], conf_threshold=0.2, iou_threshold=0.45, top_k=200, num_classes=num_classes)
         draw_bounding_box(img, pred_bboxes, pred_labels, pred_confs, class_inverse_map)
         H, W, C = img.shape
         
@@ -39,8 +40,11 @@ def live_cam(model, cam):
         cv2.imshow("img", img)
 
 if __name__ == "__main__":
-    pretrain_path = r"H:\projectWPD\checkpoint\iteration_120000.pth"
-    model = SSD(pretrain_path, n_classes=21)
-    cam   = cv2.VideoCapture(0)
+    pretrain_path = r"H:\project_WPD\iteration_30000.pth"
+    n_classes     = 21
 
-    live_cam(model, cam)
+    #model = SSD300(pretrain_path, n_classes=n_classes)
+    model = SSD512(pretrain_path, n_classes=n_classes)
+
+    cam   = cv2.VideoCapture(0)
+    live_cam(model, cam, size=512)

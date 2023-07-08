@@ -1,6 +1,7 @@
 from utils.lib import *
 from utils.VOC_utils import VOCUtils, class_inverse_map
-from model.SSD300 import SSD
+from model.SSD300 import SSD300
+from model.SSD512 import SSD512
 from pycocotools.coco import COCO
 from utils.COCO_utils import COCOUtils
 
@@ -22,3 +23,6 @@ from utils.COCO_utils import COCOUtils
 
 #dataset = COCOUtils(r"H:\data\COCO\val2014", r"H:\data\COCO\instances_minival2014.json").make_dataset(phase="valid")
 #print(len(dataset))
+
+T = SSD512()
+print(T.create_prior_boxes().shape)

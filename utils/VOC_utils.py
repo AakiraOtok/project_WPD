@@ -179,8 +179,8 @@ class VOCUtils():
         dataset = VOC_dataset(img_path_list, ann_path_list, transform, phase)
         return dataset
     
-    def make_dataloader(self, version, file_txt, batch_size, shuffle, collate_fn=collate_fn, phase='train',num_worker=0, pin_memory=False):
-        dataset    = self.make_dataset(version, file_txt, CustomAugmentation(), phase)
+    def make_dataloader(self, version, file_txt, batch_size, shuffle, transform=CustomAugmentation(), collate_fn=collate_fn, phase='train',num_worker=0, pin_memory=False):
+        dataset    = self.make_dataset(version, file_txt, transform, phase)
         dataloader = data.DataLoader(dataset, batch_size, shuffle, num_workers=num_worker, collate_fn=collate_fn, pin_memory=pin_memory) 
         return dataloader
 

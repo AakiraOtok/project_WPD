@@ -106,8 +106,8 @@ class COCOUtils():
         dataset = COCO_dataset(self.data_folder_path, self.ann_file, transform, phase)
         return dataset
 
-    def make_dataloader(self, batch_size, shuffle, collate_fn=COCO_collate_fn, phase='train',num_worker=0, pin_memory=False):
-        dataset    = self.make_dataset(transform=CustomAugmentation(), phase=phase)
+    def make_dataloader(self, batch_size, shuffle, transform=CustomAugmentation(), collate_fn=COCO_collate_fn, phase='train',num_worker=0, pin_memory=False):
+        dataset    = self.make_dataset(transform=transform, phase=phase)
         dataloader = data.DataLoader(dataset, batch_size, shuffle, collate_fn=collate_fn, num_workers=num_worker, pin_memory=pin_memory)
         return dataloader
 
