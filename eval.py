@@ -194,7 +194,7 @@ def eval_on_COCO(pretrain_path, size=300):
 
 if __name__ == "__main__":
 
-    pretrain_path = r"H:\project_WPD\iteration_30000.pth"
+    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_120000.pth"
     size          = 512
     num_classes   = 21
 
