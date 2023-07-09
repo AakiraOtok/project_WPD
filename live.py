@@ -2,11 +2,11 @@ from utils.lib import *
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
 from utils.box_utils import draw_bounding_box, Non_Maximum_Suppression
-from utils.VOC_utils import class_direct_map, class_inverse_map
+from utils.VOC_utils import VOC_name2idx, VOC_idx2name
 from utils.augmentations_utils import CustomAugmentation
 from collections import deque
 
-def live_cam(model, cam, size=300, num_classes=21):
+def live_cam(model, cam, size=300, num_classes=21, mapping = VOC_idx2name):
     model.to("cuda")
     dboxes = model.create_prior_boxes().to("cuda")
     d = deque()
@@ -24,7 +24,7 @@ def live_cam(model, cam, size=300, num_classes=21):
         offset, conf = model(transformed_img.unsqueeze(0))
         
         pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset[0], conf[0], conf_threshold=0.2, iou_threshold=0.45, top_k=200, num_classes=num_classes)
-        draw_bounding_box(img, pred_bboxes, pred_labels, pred_confs, class_inverse_map)
+        draw_bounding_box(img, pred_bboxes, pred_labels, pred_confs, mapping)
         H, W, C = img.shape
         
         t = time.time()

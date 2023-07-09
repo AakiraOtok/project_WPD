@@ -1,5 +1,5 @@
 from utils.lib import *
-from utils.VOC_utils import VOCUtils, class_inverse_map
+from utils.VOC_utils import VOCUtils, idx2name
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
 from pycocotools.coco import COCO

@@ -1,7 +1,7 @@
 from utils.lib import *
 from utils.augmentations_utils import CustomAugmentation
 
-class_direct_map = {
+VOC_name2idx = {
     'aeroplane'   : 1,
     'bicycle'     : 2,
     'bird'        : 3,
@@ -25,7 +25,8 @@ class_direct_map = {
 }
 
 # map ngược lại
-class_inverse_map = dict(zip([key for key in class_direct_map.values()], [value for value in class_direct_map.keys()]))
+VOC_idx2name = dict(zip([key for key in VOC_name2idx.values()], [value for value in VOC_name2idx.keys()]))
+
 
 def collate_fn(batches):
     """
@@ -117,7 +118,7 @@ class VOC_dataset(data.Dataset):
         bboxes, labels, difficulties = read_ann(self.ann_path_list[index])
         temp = []
         for label in labels:
-            temp.append(class_direct_map[label])
+            temp.append(VOC_name2idx[label])
         bboxes       = np.array(bboxes)
         labels       = np.array(temp)
         difficulties = np.array(difficulties)

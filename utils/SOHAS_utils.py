@@ -1,6 +1,7 @@
 from utils.lib import *
+from utils.augmentations_utils import CustomAugmentation
 
-idx2name = {
+SOHAS_idx2name = {
     1 : "pistol",
     2 : "smartphone",
     3 : "knife",
@@ -9,7 +10,7 @@ idx2name = {
     6 : "tarjeta"
 }
 
-name2idx = {
+SOHAS_name2idx = {
     "pistol"     : 1,
     "smartphone" : 2,
     "knife"      : 3,
@@ -17,6 +18,32 @@ name2idx = {
     "billete"    : 5,
     "tarjeta"    : 6
 }
+
+def collate_fn(batches):
+    """
+    custom dataset với hàm collate_fn để hợp nhất dữ liệu từ batch_size dữ liệu đơn lẻ
+
+    :param batches được trả về từ __getitem__() 
+    
+    return:
+    images, tensor [batch_size, C, H, W]
+    bboxes, list [tensor([n_box, 4]), ...]
+    labels, list [tensor([n_box]), ...]
+    difficulties, list[tensor[n_box], ...]
+    """
+    images       = []
+    bboxes       = []
+    labels       = []
+    difficulties = []
+
+    for batch in batches:
+        images.append(batch[0])
+        bboxes.append(batch[1])
+        labels.append(batch[2])
+        difficulties.append(batch[3])
+    
+    images = torch.stack(images, dim=0)
+    return images, bboxes, labels, difficulties
 
 def read_ann(ann_path):
     """
@@ -88,7 +115,7 @@ class SOHAS_dataset(data.Dataset):
         bboxes, labels, difficulties = read_ann(ann_path)
         temp = []
         for label in labels:
-            temp.append(name2idx[label])
+            temp.append(SOHAS_name2idx[label])
         bboxes       = np.array(bboxes)
         labels       = np.array(temp)
         difficulties = np.array(difficulties)
@@ -105,9 +132,22 @@ class SOHAS_dataset(data.Dataset):
             return image, bboxes, labels, difficulties
         else:
             return origin_image, image, bboxes, labels, difficulties
+        
+class SOHASUtils():
+
+    def __init__(self, data_folder_path):
+        self.data_folder_path = data_folder_path
+
+    def make_dataset(self, folder, transform=CustomAugmentation(), phase='train'):
+        dataset = SOHAS_dataset(data_folder_path=self.data_folder_path, folder=folder, transform=transform, phase=phase)
+        return dataset
+
+    def make_dataloader(self, folder, batch_size, shuffle, transform=CustomAugmentation(), collate_fn=collate_fn, phase='train',num_worker=0, pin_memory=False):
+        dataset    = self.make_dataset(folder, transform=transform, phase=phase)
+        dataloader = data.DataLoader(dataset, batch_size, shuffle, num_workers=num_worker, collate_fn=collate_fn, pin_memory=pin_memory)
+        return dataloader
 
 
-from utils.augmentations_utils import CustomAugmentation
 if __name__ == "__main__":
     data_folder_path = r"H:\data"
     T = SOHAS_dataset(data_folder_path, r'train', CustomAugmentation(size=512), phase='valid')
@@ -131,7 +171,7 @@ if __name__ == "__main__":
             #print("//////////////////")
 
             cv2.rectangle(orin_image, p1, p2, (0, 255, 0), 1, 1)
-            cv2.putText(orin_image, idx2name[labels[i].item()], p1, 1, 1, (0, 255, 0), 1, 1)
+            cv2.putText(orin_image, SOHAS_idx2name[labels[i].item()], p1, 1, 1, (0, 255, 0), 1, 1)
 
         cv2.imshow('img', orin_image)
         cv2.waitKey()

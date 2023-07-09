@@ -1,12 +1,12 @@
 from utils.lib import *
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
-from utils.VOC_utils import VOCUtils, collate_fn, class_inverse_map, class_direct_map
-from utils.COCO_utils import COCOUtils, idx2name
+from utils.VOC_utils import VOCUtils, VOC_idx2name, VOC_name2idx
+from utils.COCO_utils import COCOUtils, COCO_idx2name, COCO_name2idx
 from utils.box_utils import Non_Maximum_Suppression, draw_bounding_box
 from utils.augmentations_utils import CustomAugmentation
 
-def detect(dataset, model, num_classes=21):
+def detect(dataset, model, num_classes=21, mapping=VOC_idx2name):
     model.to("cuda")
     dboxes = model.create_prior_boxes().to("cuda")
     #for images, bboxes, labels, difficulties in dataloader:
@@ -19,7 +19,7 @@ def detect(dataset, model, num_classes=21):
         conf   = conf.to("cuda")
         pred_bboxes, pred_labels, pred_confs = Non_Maximum_Suppression(dboxes, offset[0], conf[0], conf_threshold=0.4, iou_threshold=0.45, top_k=200, num_classes=num_classes)
 
-        draw_bounding_box(origin_image, pred_bboxes, pred_labels, pred_confs, class_inverse_map)
+        draw_bounding_box(origin_image, pred_bboxes, pred_labels, pred_confs, mapping)
         cv2.imshow("img", origin_image)
         cv2.waitKey()
 
@@ -33,7 +33,10 @@ def detect_on_COCO(pretrain_path, size=300):
     elif size==512:
         model      = SSD512(pretrain_path=pretrain_path, data_train_on="COCO",n_classes=81)
     
-    return dataset, model
+    num_classes = 81
+    mapping     = COCO_idx2name
+
+    return dataset, model, num_classes, mapping
 
 def detect_on_VOC(pretrain_path, size=300):
     data_folder_path = r"H:\projectWPD\data"
@@ -44,12 +47,20 @@ def detect_on_VOC(pretrain_path, size=300):
     elif size==512:
         model      = SSD512(pretrain_path=pretrain_path, data_train_on="VOC",n_classes=21)
 
-    return dataset, model
+    num_classes = 21
+    mapping     = VOC_idx2name
+
+    return dataset, model, num_classes, mapping
+
+
+
+
+
 
 if __name__ == "__main__":
     pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_120000.pth"
     
-    dataset, model = detect_on_VOC(pretrain_path, size=512)
-    #dataset, model = detect_on_COCO(pretrain_path, size=300)
+    dataset, model, num_classes, mapping = detect_on_VOC(pretrain_path, size=512)
+    #dataset, model, num_classes, mapping = detect_on_COCO(pretrain_path, size=300)
     
-    detect(dataset, model)
+    detect(dataset, model, num_classes=num_classes, mapping=mapping)
