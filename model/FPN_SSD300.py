@@ -206,6 +206,16 @@ class FPNConvolutions(nn.Module):
         self.fp1_upsample = nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, stride=2, padding=1)
         self.fp1_conv     = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
 
+    def init_conv2d(self):
+        """
+        Initialize convolution parameters.
+        """
+        for c in self.children():
+            if isinstance(c, nn.Conv2d):
+                nn.init.xavier_uniform_(c.weight)
+                if c.bias is not None:
+                    nn.init.constant_(c.bias, 0.)
+
     def forward(self, conv3_3_feats, conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats ,conv11_2_feats):
 
         out = F.relu(self.fp6_upsample(conv11_2_feats))
@@ -365,6 +375,7 @@ class FPN_SSD300(nn.Module):
         else:
             self.base_net.load_pretrain()
             self.auxi_conv.init_conv2d()
+            self.fp_conv.init_conv2d()
             self.pred_conv.init_conv2d()
 
     def create_prior_boxes(self):
