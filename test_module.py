@@ -1,5 +1,5 @@
 from utils.lib import *
-from utils.VOC_utils import VOCUtils, idx2name
+from utils.VOC_utils import VOCUtils
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
 from pycocotools.coco import COCO
@@ -24,5 +24,13 @@ from utils.COCO_utils import COCOUtils
 #dataset = COCOUtils(r"H:\data\COCO\val2014", r"H:\data\COCO\instances_minival2014.json").make_dataset(phase="valid")
 #print(len(dataset))
 
-T = SSD512()
-print(T.create_prior_boxes().shape)
+#T = SSD512()
+#print(T.create_prior_boxes().shape)
+
+a = torch.ones(1, 1024, 19, 19)
+convtp  = nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=2, stride=2)
+conv1x1 = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1)
+b = convtp(a)
+b = conv1x1(b)
+
+print(b.shape)

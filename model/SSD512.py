@@ -197,6 +197,8 @@ class PredictionConvolutions(nn.Module):
             'conv12_2' : 4
         }
 
+        # kernel size = 3 và padding = 1 không làm thay đổi kích thước feature map 
+
         self.loc_conv4_3   = nn.Conv2d(512,  n_boxes['conv4_3']*4, kernel_size=3, padding=1)
         self.loc_conv7     = nn.Conv2d(1024, n_boxes['conv7']*4, kernel_size=3, padding=1)
         self.loc_conv8_2   = nn.Conv2d(512,  n_boxes['conv8_2']*4, kernel_size=3, padding=1)

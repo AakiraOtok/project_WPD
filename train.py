@@ -3,6 +3,7 @@ from utils.VOC_utils import VOCUtils, collate_fn
 from utils.COCO_utils import COCOUtils, COCO_collate_fn
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
+from model.FPN_SSD300 import FPN_SSD300
 from utils.box_utils import MultiBoxLoss
 from utils.augmentations_utils import CustomAugmentation
 
@@ -44,7 +45,7 @@ def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(8000
                 if iteration + 1 == max_iter:
                     sys.exit()
 
-def train_on_COCO(size=300, pretrain_path=None):
+def train_on_COCO(size=300, version = "original", pretrain_path=None):
     train_folder_path  = r"H:\data\COCO\train2014"
     val35k_folder_path = r"H:\data\COCO\val2014"
     train_file         = r"H:\data\COCO\instances_train2014.json"
@@ -55,16 +56,20 @@ def train_on_COCO(size=300, pretrain_path=None):
     dataset    = data.ConcatDataset([train, val35k])
     dataloader = data.DataLoader(dataset, 32, True, collate_fn=COCO_collate_fn, num_workers=6, pin_memory=True)
 
-    if size==300:
-        model = SSD300(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
-    elif size==512:
-        model = SSD512(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
+    if version == "original":
+        if size==300:
+            model = SSD300(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
+        elif size==512:
+            model = SSD512(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
+    elif version == "FPN":
+        if size == 300:
+            model = FPN_SSD300(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
 
     criterion  = MultiBoxLoss(num_classes=81)
 
     return dataloader, model, criterion
 
-def train_on_VOC(size=300, pretrain_path=None):
+def train_on_VOC(size=300, version=None, pretrain_path=None):
     data_folder_path = r"H:\projectWPD\data"
     voc              = VOCUtils(data_folder_path)
     
@@ -74,10 +79,14 @@ def train_on_VOC(size=300, pretrain_path=None):
 
     dataloader       = data.DataLoader(dataset, 32, True, num_workers=6, collate_fn=collate_fn, pin_memory=True)
 
-    if size==300:
-        model = SSD300(n_classes=21, pretrain_path=pretrain_path)
-    elif size==512:
-        model = SSD512(n_classes=21, pretrain_path=pretrain_path)
+    if version == "original":
+        if size==300:
+            model = SSD300(n_classes=21, pretrain_path=pretrain_path)
+        elif size==512:
+            model = SSD512(n_classes=21, pretrain_path=pretrain_path)
+    elif version == "FPN":
+        if size == 300:
+            model = FPN_SSD300(n_classes=21, pretrain_path=pretrain_path)
 
     criterion  = MultiBoxLoss(num_classes=21)
 
@@ -86,7 +95,7 @@ def train_on_VOC(size=300, pretrain_path=None):
 
 if __name__ == "__main__":
 
-    dataloader, model, criterion = train_on_VOC()
+    dataloader, model, criterion = train_on_VOC(version="FPN")
     #dataloader, model, criterion = train_on_COCO()
 
     biases     = []
