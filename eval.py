@@ -1,6 +1,7 @@
 from utils.lib import *
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
+from model.FPN_SSD300 import FPN_SSD300
 from utils.VOC_utils import VOCUtils
 from utils.COCO_utils import COCOUtils
 from utils.box_utils import Non_Maximum_Suppression, jaccard
@@ -171,34 +172,42 @@ def calc_APs(model, dataset, threshold=0.5, num_classes=21):
 
         return APs
     
-def eval_on_VOC(pretrain_path, size=300):
+def eval_on_VOC(pretrain_path, version="original", size=300):
     data_folder_path = r"H:\projectWPD\data"
     dataset    = VOCUtils(data_folder_path).make_dataset(r"VOC2007", r"test.txt", phase="valid", transform=CustomAugmentation(size=size))
 
-    if size==300:
-        model      = SSD300(pretrain_path=pretrain_path, n_classes=21)
-    elif size==512:
-        model      = SSD512(pretrain_path=pretrain_path, n_classes=21)
+    if version == "original":
+        if size == 300:
+            model      = SSD300(pretrain_path=pretrain_path, n_classes=21)
+        elif size == 512:
+            model      = SSD512(pretrain_path=pretrain_path, n_classes=21)
+    elif version == "FPN":
+        if size == 300:
+            model     = FPN_SSD300(pretrain_path=pretrain_path, n_classes=21)
 
     return dataset, model
 
-def eval_on_COCO(pretrain_path, size=300):
+def eval_on_COCO(pretrain_path, version="original", size=300):
     dataset = COCOUtils(r"H:\data\COCO\val2014", r"H:\data\COCO\instances_minival2014.json").make_dataset(phase="valid", transform=CustomAugmentation(size=size))
 
-    if size==300:
-        model = SSD300(pretrain_path, data_train_on="COCO", n_classes=81)
-    elif size==512:
-        model = SSD512(pretrain_path, data_train_on="COCO", n_classes=81)
+    if version == "original":
+        if size==300:
+            model = SSD300(pretrain_path, data_train_on="COCO", n_classes=81)
+        elif size==512:
+            model = SSD512(pretrain_path, data_train_on="COCO", n_classes=81)
+    elif version == "FPN":
+        if size == 300:
+            model = FPN_SSD300(pretrain_path=pretrain_path, data_train_on="COCO", n_classes=81)
     
     return dataset, model
 
 if __name__ == "__main__":
 
     pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_120000.pth"
-    size          = 512
+    size          = 300
     num_classes   = 21
 
-    dataset, model = eval_on_VOC(pretrain_path, size=size)
+    dataset, model = eval_on_VOC(pretrain_path, version="FPN", size=size)
     #dataset, model = eval_on_COCO(pretrain_path, size=size)
 
     APs = calc_APs(model, dataset, num_classes=num_classes)

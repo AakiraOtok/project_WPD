@@ -27,10 +27,14 @@ from utils.COCO_utils import COCOUtils
 #T = SSD512()
 #print(T.create_prior_boxes().shape)
 
-a = torch.ones(1, 1024, 19, 19)
-convtp  = nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=2, stride=2)
-conv1x1 = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1)
-b = convtp(a)
-b = conv1x1(b)
+#a = torch.ones(1, 1024, 19, 19)
+#convtp  = nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=2, stride=2)
+#conv1x1 = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1)
+#b = convtp(a)
+#b = conv1x1(b)
 
-print(b.shape)
+#print(b.shape)
+
+a = torch.FloatTensor([5])
+b = torch.FloatTensor(5)
+print(torch.pow(b, a))

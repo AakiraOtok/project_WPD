@@ -208,6 +208,54 @@ class MultiBoxLoss(nn.Module):
         return (loss_l + loss_c)/(num_pos.sum() + 1e-5)
 
 
+class MultiBox_Focal_Loss(nn.Module):
+    """
+    Args:
+        offset_p : [batch, 8732, 4] là offset được model dự đoán ra
+        conf_p   : [batch, 8732, nclass] là độ tự tin được model dự đoán ra
+        dboxes   : [batch, 8732, 4] [cx, cy, w, h] chuẩn hóa [0..1]
+        targets  : [nbox, 5], 4 cái đầu là [xmin, ymin, xmax, ymax] chuẩn hóa [0..1], cái cuối là label 
+    
+    """
+
+    def __init__(self, num_classes, gamma=2, alpha=0.25):
+        super().__init__()
+        self.num_classes = num_classes
+        self.gamma = nn.Parameter(torch.FloatTensor([gamma])).to("cuda")
+        self.alpha = nn.Parameter(torch.FloatTensor([alpha])).to("cuda")
+
+    def forward(self, offset_p, conf_p, dboxes, batch_bboxes, batch_labels):
+
+        batch_size = offset_p.size(0)
+        nbox       = offset_p.size(1)
+        offset_t = torch.Tensor(batch_size, nbox, 4).to("cuda")
+        labels_t = torch.LongTensor(batch_size, nbox).to("cuda")
+
+        for idx in range(batch_size):
+            bboxes    = batch_bboxes[idx]
+            labels    = batch_labels[idx]
+            matching_strategy_1(dboxes, bboxes, labels, offset_t, labels_t, idx)
+
+        pos_mask = (labels_t != 0)
+        neg_mask = (labels_t == 0)
+
+        #location loss
+        loss_l = F.smooth_l1_loss(offset_p[pos_mask], offset_t[pos_mask], reduction="sum")
+
+        #confidence loss
+        num_pos = pos_mask.sum(dim=1)
+        
+        conf_p = F.softmax(conf_p, dim=2)
+        conf_p = torch.gather(conf_p, 2, labels_t.unsqueeze(2)).squeeze(2)
+        #print(conf_p)
+        #sys.exit()
+
+        #focalloss
+        loss_c = -self.alpha*torch.pow((1 - conf_p), self.gamma)*torch.log(conf_p + 1e-5)
+
+        return (loss_l + loss_c.sum())/(num_pos.sum() + 1e-5)
+
+
 
 def nms(bboxes, conf, conf_threshold=0.01, iou_threshold=0.45):
     #"""

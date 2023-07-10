@@ -4,6 +4,7 @@ from utils.COCO_utils import COCOUtils, COCO_collate_fn
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
 from model.FPN_SSD300 import FPN_SSD300
+from model.FPN_SSD512 import FPN_SSD512
 from utils.box_utils import MultiBoxLoss
 from utils.augmentations_utils import CustomAugmentation
 
@@ -64,6 +65,8 @@ def train_on_COCO(size=300, version = "original", pretrain_path=None):
     elif version == "FPN":
         if size == 300:
             model = FPN_SSD300(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
+        elif size == 512:
+            model = FPN_SSD512(data_train_on="COCO", n_classes=81, pretrain_path=pretrain_path)
 
     criterion  = MultiBoxLoss(num_classes=81)
 
@@ -87,15 +90,19 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
     elif version == "FPN":
         if size == 300:
             model = FPN_SSD300(n_classes=21, pretrain_path=pretrain_path)
+        elif size == 512:
+            model = FPN_SSD512(n_classes=21, pretrain_path=pretrain_path)
 
-    criterion  = MultiBoxLoss(num_classes=21)
+    #criterion  = MultiBoxLoss(num_classes=21)
+    from utils.box_utils import MultiBox_Focal_Loss
+    criterion  = MultiBox_Focal_Loss(num_classes=21)
 
     return dataloader, model, criterion
 
 
 if __name__ == "__main__":
 
-    dataloader, model, criterion = train_on_VOC(version="FPN")
+    dataloader, model, criterion = train_on_VOC(version="FPN", size=300)
     #dataloader, model, criterion = train_on_COCO()
 
     biases     = []
