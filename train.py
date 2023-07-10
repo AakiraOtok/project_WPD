@@ -69,7 +69,7 @@ def train_on_COCO(size=300, version = "original", pretrain_path=None):
 
     return dataloader, model, criterion
 
-def train_on_VOC(size=300, version=None, pretrain_path=None):
+def train_on_VOC(size=300, version="original", pretrain_path=None):
     data_folder_path = r"H:\projectWPD\data"
     voc              = VOCUtils(data_folder_path)
     
@@ -107,6 +107,6 @@ if __name__ == "__main__":
             else:
                 not_biases.append(param)
 
-    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
+    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 2e-4}, {'params' : not_biases}], lr=2e-4, momentum=0.9, weight_decay=5e-4)
 
     train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000), max_iter=120000)
