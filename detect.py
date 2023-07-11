@@ -69,7 +69,7 @@ def detect_on_VOC(pretrain_path, version="original", size=300):
 
 
 if __name__ == "__main__":
-    pretrain_path = r"H:\project_WPD\iteration_10000.pth"
+    pretrain_path = r"H:\project_WPD\iteration_30000.pth"
     
     dataset, model, num_classes, mapping = detect_on_VOC(pretrain_path, version="FPN", size=300)
     #dataset, model, num_classes, mapping = detect_on_COCO(pretrain_path, size=300)

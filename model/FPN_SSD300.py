@@ -211,7 +211,7 @@ class FPNConvolutions(nn.Module):
         Initialize convolution parameters.
         """
         for c in self.children():
-            if isinstance(c, nn.Conv2d):
+            if isinstance(c, (nn.Conv2d, nn.ConvTranspose2d)):
                 nn.init.xavier_uniform_(c.weight)
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
