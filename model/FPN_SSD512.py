@@ -196,25 +196,25 @@ class FPNConvolutions(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.fp7_upsample = nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=2)
+        self.fp7_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp7_conv     = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
 
-        self.fp6_upsample = nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=2, stride=2)
+        self.fp6_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp6_conv     = nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=1)
 
-        self.fp5_upsample = nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=2, stride=2)
+        self.fp5_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp5_conv     = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
 
-        self.fp4_upsample = nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=2, stride=2)
+        self.fp4_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp4_conv     = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1)
 
-        self.fp3_upsample = nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=2, stride=2)
+        self.fp3_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp3_conv     = nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=1)
 
-        self.fp2_upsample = nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=2, stride=2)
+        self.fp2_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp2_conv     = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1)
 
-        self.fp1_upsample = nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=2, stride=2)
+        self.fp1_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp1_conv     = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
 
     def init_conv2d(self):
@@ -222,7 +222,7 @@ class FPNConvolutions(nn.Module):
         Initialize convolution parameters.
         """
         for c in self.children():
-            if isinstance(c, (nn.Conv2d, nn.ConvTranspose2d)):
+            if isinstance(c, nn.Conv2d):
                 nn.init.xavier_uniform_(c.weight)
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
