@@ -189,22 +189,11 @@ class FPNConvolutions(nn.Module):
         super().__init__()
 
         self.fp6_upsample = nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3)
-        self.fp6_conv     = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
-
         self.fp5_upsample = nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3)
-        self.fp5_conv     = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
-
-        self.fp4_upsample = nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=2, stride=2)
-        self.fp4_conv     = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1)
-
-        self.fp3_upsample = nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, stride=2, padding=1)
-        self.fp3_conv     = nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=1)
-
-        self.fp2_upsample = nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=2, stride=2)
-        self.fp2_conv     = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1)
-
-        self.fp1_upsample = nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, stride=2, padding=1)
-        self.fp1_conv     = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
+        self.fp4_upsample = nn.ConvTranspose2d(in_channels=256, out_channels=512, kernel_size=2, stride=2)
+        self.fp3_upsample = nn.ConvTranspose2d(in_channels=512, out_channels=1024, kernel_size=3, stride=2, padding=1)
+        self.fp2_upsample = nn.ConvTranspose2d(in_channels=1024, out_channels=512, kernel_size=2, stride=2)
+        self.fp1_upsample = nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=2, padding=1)
 
     def init_conv2d(self):
         """
@@ -219,32 +208,26 @@ class FPNConvolutions(nn.Module):
     def forward(self, conv3_3_feats, conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats ,conv11_2_feats):
 
         out = F.relu(self.fp6_upsample(conv11_2_feats))
-        out = F.relu(self.fp6_conv(out))
         out = out + conv10_2_feats
         fp6_feats = out
 
         out = F.relu(self.fp5_upsample(out))
-        out = F.relu(self.fp5_conv(out))
         out = out + conv9_2_feats
         fp5_feats = out
 
         out = F.relu(self.fp4_upsample(out))
-        out = F.relu(self.fp4_conv(out))
         out = out + conv8_2_feats
         fp4_feats = out
 
         out = F.relu(self.fp3_upsample(out))
-        out = F.relu(self.fp3_conv(out))
         out = out + conv7_feats
         fp3_feats = out
 
         out = F.relu(self.fp2_upsample(out))
-        out = F.relu(self.fp2_conv(out))
         out = out + conv4_3_feats
         fp2_feats = out
 
         out = F.relu(self.fp1_upsample(out))
-        out = F.relu(self.fp1_conv(out))
         fp1_feats = out + conv3_3_feats
 
         return fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats
