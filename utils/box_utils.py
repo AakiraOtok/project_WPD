@@ -251,7 +251,7 @@ class MultiBox_Focal_Loss(nn.Module):
         
         conf_p = F.softmax(conf_p, dim=2)
         
-        loss_c = -self.alpha*mask*torch.pow((1 - conf_p), self.gamma)*torch.log(conf_p + 1e-5)
+        loss_c = -self.alpha*mask*torch.pow((1 - conf_p), self.gamma)*torch.log(conf_p + 1e-10)
 
         return (loss_l + loss_c.sum())/(num_pos.sum() + 1e-5)
 
