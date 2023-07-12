@@ -35,6 +35,9 @@ from utils.COCO_utils import COCOUtils
 
 #print(b.shape)
 
-a = torch.FloatTensor([5])
-b = torch.FloatTensor(5)
-print(torch.pow(b, a))
+#a = torch.FloatTensor([5])
+#b = torch.FloatTensor(5)
+#print(torch.pow(b, a))
+
+a = torch.zeros(1, 2, 3)
+print(a)

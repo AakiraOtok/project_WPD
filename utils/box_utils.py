@@ -221,8 +221,8 @@ class MultiBox_Focal_Loss(nn.Module):
     def __init__(self, num_classes, gamma=2, alpha=0.25):
         super().__init__()
         self.num_classes = num_classes
-        self.gamma = nn.Parameter(torch.FloatTensor([gamma])).to("cuda")
-        self.alpha = nn.Parameter(torch.FloatTensor([alpha])).to("cuda")
+        self.gamma = torch.FloatTensor([gamma]).to("cuda")
+        self.alpha = torch.FloatTensor([alpha]).to("cuda")
 
     def forward(self, offset_p, conf_p, dboxes, batch_bboxes, batch_labels):
 
@@ -244,14 +244,14 @@ class MultiBox_Focal_Loss(nn.Module):
 
         #confidence loss
         num_pos = pos_mask.sum(dim=1)
+
+        num_classes = conf_p.size(2)
+        mask        = torch.zeros(batch_size, nbox, num_classes).to("cuda")
+        mask.scatter_(2, labels_t.unsqueeze(2), 1.)
         
         conf_p = F.softmax(conf_p, dim=2)
-        conf_p = torch.gather(conf_p, 2, labels_t.unsqueeze(2)).squeeze(2)
-        #print(conf_p)
-        #sys.exit()
-
-        #focalloss
-        loss_c = -self.alpha*torch.pow((1 - conf_p), self.gamma)*torch.log(conf_p + 1e-5)
+        
+        loss_c = -self.alpha*mask*torch.pow((1 - conf_p), self.gamma)*torch.log(conf_p + 1e-5)
 
         return (loss_l + loss_c.sum())/(num_pos.sum() + 1e-5)
 
