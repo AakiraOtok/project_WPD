@@ -96,10 +96,10 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
     #criterion  = MultiBoxLoss(num_classes=21)
     from utils.box_utils import MultiBox_Focal_Loss
     criterion  = MultiBox_Focal_Loss(num_classes=21, alpha=[
-                                0.25, 0.75, 0.75, 0.75, 0.75,
-                                0.75, 0.75, 0.75, 0.75, 0.75,
-                                0.75, 0.75, 0.75, 0.75, 0.75,
-                                0.75, 0.75, 0.75, 0.75, 0.75, 0.75])
+                                0.35, 0.65, 0.65, 0.65, 0.65,
+                                0.65, 0.65, 0.65, 0.65, 0.65,
+                                0.65, 0.65, 0.65, 0.65, 0.65,
+                                0.65, 0.65, 0.65, 0.65, 0.65, 0.65], gamma=1.)
 
     return dataloader, model, criterion
 
