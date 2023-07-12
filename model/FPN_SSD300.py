@@ -218,34 +218,34 @@ class FPNConvolutions(nn.Module):
 
     def forward(self, conv3_3_feats, conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats ,conv11_2_feats):
 
-        out = F.relu(self.fp6_upsample(conv11_2_feats))
-        out = F.relu(self.fp6_conv(out))
-        out = out + conv10_2_feats
+        out = self.fp6_upsample(conv11_2_feats)
+        out = self.fp6_conv(out)
+        out = F.relu(out + conv10_2_feats)
         fp6_feats = out
 
-        out = F.relu(self.fp5_upsample(out))
-        out = F.relu(self.fp5_conv(out))
-        out = out + conv9_2_feats
+        out = self.fp5_upsample(out)
+        out = self.fp5_conv(out)
+        out = F.relu(out + conv9_2_feats)
         fp5_feats = out
 
-        out = F.relu(self.fp4_upsample(out))
-        out = F.relu(self.fp4_conv(out))
-        out = out + conv8_2_feats
+        out = self.fp4_upsample(out)
+        out = self.fp4_conv(out)
+        out = F.relu(out + conv8_2_feats)
         fp4_feats = out
 
-        out = F.relu(self.fp3_upsample(out))
-        out = F.relu(self.fp3_conv(out))
-        out = out + conv7_feats
+        out = self.fp3_upsample(out)
+        out = self.fp3_conv(out)
+        out = F.relu(out + conv7_feats)
         fp3_feats = out
 
-        out = F.relu(self.fp2_upsample(out))
-        out = F.relu(self.fp2_conv(out))
-        out = out + conv4_3_feats
+        out = self.fp2_upsample(out)
+        out = self.fp2_conv(out)
+        out = F.relu(out + conv4_3_feats)
         fp2_feats = out
 
-        out = F.relu(self.fp1_upsample(out))
-        out = F.relu(self.fp1_conv(out))
-        fp1_feats = out + conv3_3_feats
+        out = self.fp1_upsample(out)
+        out = self.fp1_conv(out)
+        fp1_feats = F.relu(out + conv3_3_feats)
 
         return fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats
 
