@@ -93,13 +93,13 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
         elif size == 512:
             model = FPN_SSD512(n_classes=21, pretrain_path=pretrain_path)
 
-    #criterion  = MultiBoxLoss(num_classes=21)
-    from utils.box_utils import MultiBox_Focal_Loss
-    criterion  = MultiBox_Focal_Loss(num_classes=21, alpha=[
-                                0.35, 0.65, 0.65, 0.65, 0.65,
-                                0.65, 0.65, 0.65, 0.65, 0.65,
-                                0.65, 0.65, 0.65, 0.65, 0.65,
-                                0.65, 0.65, 0.65, 0.65, 0.65, 0.65], gamma=1.)
+    criterion  = MultiBoxLoss(num_classes=21)
+    #from utils.box_utils import MultiBox_Focal_Loss
+    #criterion  = MultiBox_Focal_Loss(num_classes=21, alpha=[
+                                #0.35, 0.65, 0.65, 0.65, 0.65,
+                                #0.65, 0.65, 0.65, 0.65, 0.65,
+                                #0.65, 0.65, 0.65, 0.65, 0.65,
+                                #0.65, 0.65, 0.65, 0.65, 0.65, 0.65], gamma=1.)
 
     return dataloader, model, criterion
 
