@@ -7,10 +7,9 @@ class SimpleAttentionBlock(nn.Module):
 
     def forward(self, feats):
         n, c, h, w = feats.size()
-        channel_attention = F.sigmoid(feats.clone().view(n, c, h*w).sum(2, keepdim=True).unsqueeze(3)/(h*w))
-        spatial_attention = F.sigmoid(feats.clone().sum(1, keepdim=True)/c)
-        print(channel_attention.shape)
-        print(spatial_attention.shape)
+        channel_attention = (feats.clone().view(n, c, h*w).sum(2, keepdim=True).unsqueeze(3)/(h*w)).sigmoid()
+        spatial_attention = (feats.clone().sum(1, keepdim=True)/c).sigmoid()
+
         return feats*channel_attention*spatial_attention    
 
 class VGG16Base(nn.Module):
@@ -207,26 +206,32 @@ class FPNConvolutions(nn.Module):
         self.fp6_upsample = nn.Upsample(scale_factor=3, mode="bilinear")
         self.fp6_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
         self.fp6_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.fp6_conv3    = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1)
 
         self.fp5_upsample = nn.Upsample(scale_factor=5/3, mode="bilinear")
         self.fp5_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
         self.fp5_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.fp5_conv3    = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1)
 
         self.fp4_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp4_conv1    = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
         self.fp4_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.fp4_conv3    = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1)
 
         self.fp3_upsample = nn.Upsample(scale_factor=1.9, mode="bilinear")
         self.fp3_conv1    = nn.Conv2d(in_channels=1024, out_channels=256, kernel_size=1)
         self.fp3_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.fp3_conv3    = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1)
 
         self.fp2_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp2_conv1    = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
         self.fp2_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.fp2_conv3    = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1)
 
         self.fp1_upsample = nn.Upsample(scale_factor=75/38, mode="bilinear")
         self.fp1_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
         self.fp1_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
+        self.fp1_conv3    = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1)
 
     def init_conv2d(self):
         """
@@ -242,27 +247,27 @@ class FPNConvolutions(nn.Module):
 
         out = self.fp6_upsample(conv11_2_feats)
         out = F.relu(out + self.fp6_conv1(conv10_2_feats))
-        fp6_feats = F.relu(self.fp6_conv2(out))
+        fp6_feats = F.relu(self.fp6_conv3(F.relu(self.fp6_conv2(out))))
 
         out = self.fp5_upsample(out)
         out = F.relu(out + self.fp5_conv1(conv9_2_feats))
-        fp5_feats = F.relu(self.fp5_conv2(out))
+        fp5_feats = F.relu(self.fp5_conv3(F.relu(self.fp5_conv2(out))))
 
         out = self.fp4_upsample(out)
         out = F.relu(out + self.fp4_conv1(conv8_2_feats))
-        fp4_feats = F.relu(self.fp4_conv2(out))
+        fp4_feats = F.relu(self.fp4_conv3(F.relu(self.fp4_conv2(out))))
 
         out = self.fp3_upsample(out)
         out = F.relu(out + self.fp3_conv1(conv7_feats))
-        fp3_feats = F.relu(self.fp3_conv2(out))
+        fp3_feats = F.relu(self.fp3_conv3(F.relu(self.fp3_conv2(out))))
 
         out = self.fp2_upsample(out)
         out = F.relu(out + self.fp2_conv1(conv4_3_feats))
-        fp2_feats = F.relu(self.fp2_conv2(out))
+        fp2_feats = F.relu(self.fp2_conv3(F.relu(self.fp2_conv2(out))))
 
         out = self.fp1_upsample(out)
         out = F.relu(out + self.fp1_conv1(conv3_3_feats))
-        fp1_feats = F.relu(self.fp1_conv2(out))
+        fp1_feats = F.relu(self.fp1_conv3(F.relu(self.fp1_conv2(out))))
 
         return fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats
 
@@ -287,20 +292,20 @@ class PredictionConvolutions(nn.Module):
 
         # kernel size = 3 và padding = 1 không làm thay đổi kích thước feature map 
 
-        self.loc_fp6  = nn.Conv2d(256,   n_boxes['fp6']*4, kernel_size=3, padding=1)
-        self.loc_fp5  = nn.Conv2d(256,   n_boxes['fp5']*4, kernel_size=3, padding=1)
-        self.loc_fp4  = nn.Conv2d(256,   n_boxes['fp4']*4, kernel_size=3, padding=1)
-        self.loc_fp3  = nn.Conv2d(256,   n_boxes['fp3']*4, kernel_size=3, padding=1)
-        self.loc_fp2  = nn.Conv2d(256,   n_boxes['fp2']*4, kernel_size=3, padding=1)
-        self.loc_fp1  = nn.Conv2d(256,   n_boxes['fp1']*4, kernel_size=3, padding=1)
+        self.loc_fp6  = nn.Conv2d(128,   n_boxes['fp6']*4, kernel_size=3, padding=1)
+        self.loc_fp5  = nn.Conv2d(128,   n_boxes['fp5']*4, kernel_size=3, padding=1)
+        self.loc_fp4  = nn.Conv2d(128,   n_boxes['fp4']*4, kernel_size=3, padding=1)
+        self.loc_fp3  = nn.Conv2d(128,   n_boxes['fp3']*4, kernel_size=3, padding=1)
+        self.loc_fp2  = nn.Conv2d(128,   n_boxes['fp2']*4, kernel_size=3, padding=1)
+        self.loc_fp1  = nn.Conv2d(128,   n_boxes['fp1']*4, kernel_size=3, padding=1)
 
 
-        self.conf_fp6  = nn.Conv2d(256,  n_boxes['fp6']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp5  = nn.Conv2d(256,  n_boxes['fp5']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp4  = nn.Conv2d(256,  n_boxes['fp4']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp3  = nn.Conv2d(256,  n_boxes['fp3']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp2  = nn.Conv2d(256,  n_boxes['fp2']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp1  = nn.Conv2d(256,  n_boxes['fp1']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp6  = nn.Conv2d(128,  n_boxes['fp6']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp5  = nn.Conv2d(128,  n_boxes['fp5']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp4  = nn.Conv2d(128,  n_boxes['fp4']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp3  = nn.Conv2d(128,  n_boxes['fp3']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp2  = nn.Conv2d(128,  n_boxes['fp2']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp1  = nn.Conv2d(128,  n_boxes['fp1']*n_classes, kernel_size=3, padding=1)
 
     def init_conv2d(self):
         """
@@ -465,11 +470,13 @@ class FPN_SSD300(nn.Module):
 
 
 if __name__ == "__main__":
-    #T = FPN_SSD300()
-    T = SimpleAttentionBlock()
+    T = FPN_SSD300()
+    #T = SimpleAttentionBlock()
     img = torch.ones(1, 3, 300, 300)
-    #loc, conf = T(img)
-    #print(loc.shape)
-    #print(conf.shape)
-    feats = T(img)
-    print(feats.shape)
+    loc, conf = T(img)
+    print(loc.shape)
+    print(conf.shape)
+    #feats = T(img)
+    #print(feats.shape)
+    total = sum(p.numel() for p in T.parameters())
+    print(total)
