@@ -120,4 +120,4 @@ if __name__ == "__main__":
 
     optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
-    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000), max_iter=120000)
+    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(60000, 120000), max_iter=150000)
