@@ -40,4 +40,5 @@ from utils.COCO_utils import COCOUtils
 #print(torch.pow(b, a))
 
 a = torch.zeros(1, 2, 3)
-print(a)
+a = a.sum(2)
+print(a.shape)

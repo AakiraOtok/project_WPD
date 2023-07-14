@@ -1,5 +1,18 @@
 from utils.lib import *
 
+class SimpleAttentionBlock(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, feats):
+        n, c, h, w = feats.size()
+        channel_attention = F.sigmoid(feats.clone().view(n, c, h*w).sum(2, keepdim=True).unsqueeze(3)/(h*w))
+        spatial_attention = F.sigmoid(feats.clone().sum(1, keepdim=True)/c)
+        print(channel_attention.shape)
+        print(spatial_attention.shape)
+        return feats*channel_attention*spatial_attention    
+
 class VGG16Base(nn.Module):
     """
     Lấy VGG16 làm base network, tuy nhiên cần có một vài thay đổi:
@@ -39,6 +52,8 @@ class VGG16Base(nn.Module):
         # atrous
         self.conv6   = nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=3, padding=6, dilation=6)
         self.conv7   = nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=1)
+
+        self.attention = SimpleAttentionBlock()
 
     def decimate(self, tensor, steps):
         assert(len(steps) == tensor.dim())
@@ -101,12 +116,14 @@ class VGG16Base(nn.Module):
         out = F.relu(self.conv3_1(out))    # [N, 256, 75, 75]
         out = F.relu(self.conv3_2(out))    # [N, 256, 75, 75]
         out = F.relu(self.conv3_3(out))    # [N, 256, 75, 75]
+        out = self.attention(out)
         conv3_3_feats = out
         out = self.pool3(out)              # [N, 256, 38, 38] không phải [N, 256, 37, 37] do ceiling mode = True
 
         out = F.relu(self.conv4_1(out))    # [N, 512, 38, 38]
         out = F.relu(self.conv4_2(out))    # [N, 512, 38, 38]
         out = F.relu(self.conv4_3(out))    # [N, 512, 38, 38]
+        out = self.attention(out)
         conv4_3_feats = out                  # [N, 512, 38, 38]
         out = self.pool4(out)              # [N, 512, 19, 19]
 
@@ -117,10 +134,9 @@ class VGG16Base(nn.Module):
 
         out = F.relu(self.conv6(out))      # [N, 1024, 19, 19]
 
-        conv7_feats = F.relu(self.conv7(out)) # [N, 1024, 19, 19]
+        conv7_feats = self.attention(F.relu(self.conv7(out))) # [N, 1024, 19, 19]
 
         return conv3_3_feats, conv4_3_feats, conv7_feats
-    
 
 class AuxiliraryConvolutions(nn.Module):
     """ Sau base network (vgg16) sẽ là các lớp conv phụ trợ
@@ -173,7 +189,7 @@ class AuxiliraryConvolutions(nn.Module):
         conv11_2_feats = F.relu(self.conv11_2(out))          # [N, 256, 1, 1]
 
         return conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats
-    
+
 class FPNConvolutions(nn.Module):
     """ 
     conv3_3_feats  : [N, 256, 75, 75]
@@ -449,8 +465,11 @@ class FPN_SSD300(nn.Module):
 
 
 if __name__ == "__main__":
-    T = FPN_SSD300()
+    #T = FPN_SSD300()
+    T = SimpleAttentionBlock()
     img = torch.ones(1, 3, 300, 300)
-    loc, conf = T(img)
-    print(loc.shape)
-    print(conf.shape)
+    #loc, conf = T(img)
+    #print(loc.shape)
+    #print(conf.shape)
+    feats = T(img)
+    print(feats.shape)
