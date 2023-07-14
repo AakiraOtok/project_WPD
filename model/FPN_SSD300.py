@@ -7,8 +7,8 @@ class SimpleAttentionBlock(nn.Module):
 
     def forward(self, feats):
         n, c, h, w = feats.size()
-        channel_attention = (feats.clone().view(n, c, h*w).sum(2, keepdim=True).unsqueeze(3)/(h*w)).sigmoid()
-        spatial_attention = (feats.clone().sum(1, keepdim=True)/c).sigmoid()
+        channel_attention = (feats.clone().detach().view(n, c, h*w).sum(2, keepdim=True).unsqueeze(3)/(h*w)).sigmoid()
+        spatial_attention = (feats.clone().detach().sum(1, keepdim=True)/c).sigmoid()
 
         return feats*channel_attention*spatial_attention    
 
