@@ -10,6 +10,9 @@ from utils.augmentations_utils import CustomAugmentation
 
 def detect(dataset, model, num_classes=21, mapping=VOC_idx2name):
     model.to("cuda")
+    if model.training():
+        print('out')
+        sys.exit()
     dboxes = model.create_prior_boxes().to("cuda")
     #for images, bboxes, labels, difficulties in dataloader:
     for idx in range(dataset.__len__()):
@@ -73,5 +76,6 @@ if __name__ == "__main__":
     
     dataset, model, num_classes, mapping = detect_on_VOC(pretrain_path, version="FPN", size=300)
     #dataset, model, num_classes, mapping = detect_on_COCO(pretrain_path, size=300)
+    model.eval()
     
     detect(dataset, model, num_classes=num_classes, mapping=mapping)

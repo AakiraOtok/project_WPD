@@ -203,12 +203,13 @@ def eval_on_COCO(pretrain_path, version="original", size=300):
 
 if __name__ == "__main__":
 
-    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_110000.pth"
+    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_140000.pth"
     size          = 300
     num_classes   = 21
 
     dataset, model = eval_on_VOC(pretrain_path, version="FPN", size=size)
     #dataset, model = eval_on_COCO(pretrain_path, size=size)
+    model.eval()
 
     APs = calc_APs(model, dataset, num_classes=num_classes)
     APs = APs[1:] # bỏ background

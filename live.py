@@ -45,6 +45,7 @@ if __name__ == "__main__":
 
     #model = SSD300(pretrain_path, n_classes=n_classes)
     model = SSD512(pretrain_path, n_classes=n_classes)
+    model.eval()
 
     cam   = cv2.VideoCapture(0)
     live_cam(model, cam, size=512)

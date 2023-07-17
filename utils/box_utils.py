@@ -197,6 +197,7 @@ class MultiBoxLoss(nn.Module):
         conf_loss = conf_loss.view(batch_size, nbox)
 
         pos_loss_c          = conf_loss[pos_mask].sum()
+        conf_loss           = conf_loss.clone()
 
         conf_loss[pos_mask] = 0
         _, idx              = torch.sort(conf_loss, dim=1, descending=True)
