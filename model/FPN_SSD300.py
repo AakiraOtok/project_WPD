@@ -147,9 +147,10 @@ class AuxiliraryConvolutions(nn.Module):
         """
         for c in self.children():
             if isinstance(c, nn.Conv2d):
-                nn.init.kaiming_uniform_(c.weight, nonlinearity='relu')
+                nn.init.xavier_uniform_(c.weight)
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
+
 
     def forward(self, conv7_feats):
         """
@@ -187,27 +188,27 @@ class FPNConvolutions(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.fp5_upsample = nn.Upsample(scale_factor=3, mode="bicubic")
+        self.fp5_upsample = nn.Upsample(scale_factor=3, mode="bilinear")
         self.fp5_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
         self.fp5_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.fp5_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp4_upsample = nn.Upsample(scale_factor=5/3, mode="bicubic")
+        self.fp4_upsample = nn.Upsample(scale_factor=5/3, mode="bilinear")
         self.fp4_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
         self.fp4_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.fp4_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp3_upsample = nn.Upsample(scale_factor=2, mode="bicubic")
+        self.fp3_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp3_conv1    = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
         self.fp3_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.fp3_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp2_upsample = nn.Upsample(scale_factor=1.9, mode="bicubic")
+        self.fp2_upsample = nn.Upsample(scale_factor=1.9, mode="bilinear")
         self.fp2_conv1    = nn.Conv2d(in_channels=1024, out_channels=256, kernel_size=1)
         self.fp2_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.fp2_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp1_upsample = nn.Upsample(scale_factor=2, mode="bicubic")
+        self.fp1_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
         self.fp1_conv1    = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
         self.fp1_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1)
         self.fp1_bn       = nn.BatchNorm2d(num_features=256)
@@ -219,7 +220,7 @@ class FPNConvolutions(nn.Module):
         """
         for c in self.children():
             if isinstance(c, nn.Conv2d):
-                nn.init.kaiming_uniform_(c.weight, nonlinearity='relu')
+                nn.init.xavier_uniform_(c.weight)
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
 
@@ -291,10 +292,9 @@ class PredictionConvolutions(nn.Module):
         """
         for c in self.children():
             if isinstance(c, nn.Conv2d):
-                nn.init.kaiming_uniform_(c.weight, nonlinearity='relu')
+                nn.init.xavier_uniform_(c.weight)
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
-
 
     def forward(self, fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats):
 
@@ -347,7 +347,7 @@ class PredictionConvolutions(nn.Module):
         
     
 class L2Norm(nn.Module):
-    def __init__(self, input_channel, scale=20):
+    def __init__(self, input_channel, scale=20.):
         super().__init__()
         self.scale_factors = nn.Parameter(torch.FloatTensor(1, input_channel, 1, 1))
         self.eps           = 1e-10
@@ -399,9 +399,9 @@ class FPN_SSD300(nn.Module):
             
         aspect_ratios = [
                 [1., 2., 0.5],
-                [1., 2., 3., 0.5, 0.333],
-                [1., 2., 3., 0.5, 0.333],
-                [1., 2., 3., 0.5, 0.333],
+                [1., 2., 3., 0.5, 1/3],
+                [1., 2., 3., 0.5, 1/3],
+                [1., 2., 3., 0.5, 1/3],
                 [1., 2., 0.5],
                 [1., 2., 0.5]
             ]

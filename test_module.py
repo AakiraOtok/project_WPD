@@ -4,6 +4,7 @@ from model.SSD300 import SSD300
 from model.SSD512 import SSD512
 from pycocotools.coco import COCO
 from utils.COCO_utils import COCOUtils
+from model.FPN_SSD300 import FPN_SSD300
 
 #ann_file = r"H:\data\COCO\instances_valminusminival2014.json"
 #coco = COCO(annotation_file=ann_file)
@@ -39,5 +40,7 @@ from utils.COCO_utils import COCOUtils
 #b = torch.FloatTensor(5)
 #print(torch.pow(b, a))
 
-a = torch.zeros(1, 2, 3)
-print(a)
+model = FPN_SSD300()
+model = SSD300()
+t = sum(p.numel() for p in model.parameters())
+print(t)
