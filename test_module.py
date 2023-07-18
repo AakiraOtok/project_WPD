@@ -41,6 +41,6 @@ from model.FPN_SSD300 import FPN_SSD300
 #print(torch.pow(b, a))
 
 model = FPN_SSD300()
-model = SSD300()
+#model = SSD300()
 t = sum(p.numel() for p in model.parameters())
 print(t)
