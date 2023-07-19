@@ -1,4 +1,5 @@
 from utils.lib import *
+from utils.box_utils import pascalVOC_style, yolo_style
 
 class VGG16Base(nn.Module):
     """
@@ -349,9 +350,9 @@ class SSD300(nn.Module):
 
         dboxes = torch.FloatTensor(dboxes)
         
-        #dboxes = pascalVOC_style(dboxes)
-        dboxes.clamp_(0, 1)
-        #dboxes = yolo_style(dboxes)
+        dboxes = pascalVOC_style(dboxes)
+        dboxes.clamp_(min=0, max=1)
+        dboxes = yolo_style(dboxes)
                 
         return dboxes
 
