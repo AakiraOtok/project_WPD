@@ -80,7 +80,7 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
     dataset2         = voc.make_dataset(r"VOC2012", r"trainval.txt", transform=CustomAugmentation(size=size))
     dataset          = data.ConcatDataset([dataset1, dataset2])
 
-    dataloader       = data.DataLoader(dataset, 16, True, num_workers=6, collate_fn=collate_fn, pin_memory=True)
+    dataloader       = data.DataLoader(dataset, 32, True, num_workers=6, collate_fn=collate_fn, pin_memory=True)
 
     if version == "original":
         if size==300:
@@ -100,7 +100,7 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
 
 if __name__ == "__main__":
 
-    dataloader, model, criterion = train_on_VOC(version="FPN", size=300)
+    dataloader, model, criterion = train_on_VOC(version="original", size=300)
     #dataloader, model, criterion = train_on_COCO()
 
     biases     = []
@@ -112,6 +112,6 @@ if __name__ == "__main__":
             else:
                 not_biases.append(param)
 
-    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 5e-4}, {'params' : not_biases}], lr=5e-4, momentum=0.9, weight_decay=5e-4)
+    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
-    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(160000, 200000), max_iter=240000)
+    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000), max_iter=120000)

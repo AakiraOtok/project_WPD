@@ -433,8 +433,8 @@ class SSDAugmentation(object):
         return self.augment(img, boxes, labels, difficulties)
 
 class CustomAugmentation():
-    def __init__(self, phase="train", size=300, mean=[123./255, 117./255, 104./255], std=[1., 1., 1.]):
-    #def __init__(self, phase="train", size=300, mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229]):
+    #def __init__(self, phase="train", size=300, mean=[123./255, 117./255, 104./255], std=[1., 1., 1.]):
+    def __init__(self, phase="train", size=300, mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229]):
         assert(phase in ("train", "valid"))
         self.mean = mean
         self.size = size
