@@ -80,8 +80,8 @@ def yolo_style(boxes):
 # encode (giải thích trên hackmd)
 def encode_variance(dboxes, bboxes, variances=[0.1, 0.2]):
     return torch.cat(((bboxes[:, :2] - dboxes[:, :2])/(dboxes[:, 2:]*variances[0]), 
-                      torch.log(bboxes[:, 2:]/dboxes[:, 2:] + 1e-5)/variances[1]), dim=1)
-                    # torch.log có thể bị inf, add thêm eps = 1e-5
+                      torch.log(bboxes[:, 2:]/dboxes[:, 2:] + 1e-10)/variances[1]), dim=1)
+                    # torch.log có thể bị inf, add thêm eps = 1e-10
 
 # decode (giải thích trên hackmd)
 def decode_variance(dboxes, loc, variances=[0.1, 0.2]):
@@ -206,7 +206,7 @@ class MultiBoxLoss(nn.Module):
         neg_loss_c          = conf_loss[neg_mask].sum()
         loss_c = pos_loss_c + neg_loss_c
 
-        return (loss_l + loss_c)/(num_pos.sum() + 1e-5)
+        return (loss_l + loss_c)/(num_pos.sum() + 1e-10)
 
 
 class MultiBox_Focal_Loss(nn.Module):
@@ -254,7 +254,7 @@ class MultiBox_Focal_Loss(nn.Module):
         
         loss_c = -self.alpha*mask*torch.pow((1 - conf_p), self.gamma)*torch.log(conf_p + 1e-10)
 
-        return (loss_l + loss_c.sum())/(num_pos.sum() + 1e-5)
+        return (loss_l + loss_c.sum())/(num_pos.sum() + 1e-10)
 
 
 
