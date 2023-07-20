@@ -35,7 +35,7 @@ def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(8000
 
             optimizer.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_value_(model.parameters(), clip_value=2.0)
+            #nn.utils.clip_grad_value_(model.parameters(), clip_value=2.0)
             optimizer.step()
 
             print("iteration : {}, time = {}, loss = {}".format(iteration + 1, round(time.time() - t_batch, 2), loss))

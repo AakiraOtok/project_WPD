@@ -341,7 +341,7 @@ class SSD300(nn.Module):
                         scale = box_scales[idx]
                         dboxes.append([cx, cy, scale*sqrt(aspect_ratio), scale/sqrt(aspect_ratio)])
 
-                        if aspect_ratio == 1.:
+                        if aspect_ratio == 1:
                             try:
                                 scale = sqrt(scale*box_scales[idx + 1])
                             except IndexError:
