@@ -140,7 +140,7 @@ def calc_APs(model, dataset, threshold=0.5, num_classes=21):
         APs = torch.zeros(num_classes).to("cuda")
 
         # Tránh chia cho 0
-        epsilon = 1e-5
+        epsilon = 1e-10
     
         # Tính AP cho mỗi class
         for cur_class in range(1, num_classes):

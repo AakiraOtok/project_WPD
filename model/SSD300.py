@@ -350,9 +350,9 @@ class SSD300(nn.Module):
 
         dboxes = torch.FloatTensor(dboxes)
         
-        dboxes = pascalVOC_style(dboxes)
+        #dboxes = pascalVOC_style(dboxes)
         dboxes.clamp_(min=0, max=1)
-        dboxes = yolo_style(dboxes)
+        #dboxes = yolo_style(dboxes)
                 
         return dboxes
 
