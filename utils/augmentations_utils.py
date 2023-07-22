@@ -773,6 +773,7 @@ def photometric_distort(image):
 from utils.lib import *
 class CustomAugmentation():
     def __init__(self, phase="train", size=300, mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229]):
+        self.size=size
         pass
 
     def __call__(self, image, boxes, labels, difficulties, phase):
@@ -837,7 +838,7 @@ class CustomAugmentation():
                 new_image, new_boxes = flip(new_image, new_boxes)
 
         # Resize image to (300, 300) - this also converts absolute boundary coordinates to their fractional form
-        new_image, new_boxes = resize(new_image, new_boxes, dims=(300, 300))
+        new_image, new_boxes = resize(new_image, new_boxes, dims=(self.size, self.size))
 
         # Convert PIL image to Torch tensor
         new_image = FT.to_tensor(new_image)

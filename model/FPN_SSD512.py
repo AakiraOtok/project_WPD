@@ -455,7 +455,7 @@ class FPN_SSD512(nn.Module):
         dboxes = torch.FloatTensor(dboxes)
         
         #dboxes = pascalVOC_style(dboxes)
-        #dboxes.clamp_(0, 1)
+        dboxes.clamp_(0, 1)
         #dboxes = yolo_style(dboxes)
                 
         return dboxes

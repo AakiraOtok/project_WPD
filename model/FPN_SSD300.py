@@ -189,23 +189,23 @@ class FPNConvolutions(nn.Module):
         super().__init__()
 
         self.fp5_upsample = nn.Upsample(scale_factor=3, mode="bilinear")
-        self.fp5_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
+        self.fp5_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1, bias=False)
         self.fp5_bn       = nn.BatchNorm2d(num_features=256)
 
         self.fp4_upsample = nn.Upsample(scale_factor=5/3, mode="bilinear")
-        self.fp4_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
+        self.fp4_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1, bias=False)
         self.fp4_bn       = nn.BatchNorm2d(num_features=256)
 
         self.fp3_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
-        self.fp3_conv1    = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1)
+        self.fp3_conv1    = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, bias=False)
         self.fp3_bn       = nn.BatchNorm2d(num_features=512)
 
         self.fp2_upsample = nn.Upsample(scale_factor=1.9, mode="bilinear")
-        self.fp2_conv1    = nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=1)
+        self.fp2_conv1    = nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=1, bias=False)
         self.fp2_bn       = nn.BatchNorm2d(num_features=1024)
 
         self.fp1_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
-        self.fp1_conv1    = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1)
+        self.fp1_conv1    = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1, bias=False)
         self.fp1_bn       = nn.BatchNorm2d(num_features=512)
 
 
@@ -394,9 +394,9 @@ class FPN_SSD300(nn.Module):
             
         aspect_ratios = [
                 [1., 2., 0.5],
-                [1., 2., 3., 0.5, 1/3],
-                [1., 2., 3., 0.5, 1/3],
-                [1., 2., 3., 0.5, 1/3],
+                [1., 2., 3., 0.5, 0.333],
+                [1., 2., 3., 0.5, 0.333],
+                [1., 2., 3., 0.5, 0.333],
                 [1., 2., 0.5],
                 [1., 2., 0.5]
             ]
@@ -425,7 +425,7 @@ class FPN_SSD300(nn.Module):
         dboxes = torch.FloatTensor(dboxes)
         
         #dboxes = pascalVOC_style(dboxes)
-        #dboxes.clamp_(0, 1)
+        dboxes.clamp_(0, 1)
         #dboxes = yolo_style(dboxes)
                 
         return dboxes

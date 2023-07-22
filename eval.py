@@ -207,7 +207,7 @@ if __name__ == "__main__":
     size          = 300
     num_classes   = 21
 
-    dataset, model = eval_on_VOC(pretrain_path, version="original", size=size)
+    dataset, model = eval_on_VOC(pretrain_path, version="FPN", size=size)
     #dataset, model = eval_on_COCO(pretrain_path, size=size)
     model.eval()
 

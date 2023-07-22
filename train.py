@@ -100,7 +100,7 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
 
 if __name__ == "__main__":
 
-    dataloader, model, criterion = train_on_VOC(version="original", size=300)
+    dataloader, model, criterion = train_on_VOC(version="FPN", size=300)
     #dataloader, model, criterion = train_on_COCO()
 
     biases     = []
