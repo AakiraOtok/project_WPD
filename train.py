@@ -12,7 +12,7 @@ def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(8000
     torch.backends.cudnn.benchmark = True
     model.to("cuda")
     dboxes = model.create_prior_boxes().to("cuda")
-    iteration = -1
+    iteration = 80000
 
     while(1):
         for batch_images, batch_bboxes, batch_labels, batch_difficulties in dataloader: 
@@ -97,10 +97,26 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
 
     return dataloader, model, criterion
 
-
+from model.aug_FPNSSD300 import augFPN_SSD300
 if __name__ == "__main__":
 
-    dataloader, model, criterion = train_on_VOC(version="FPN", size=300)
+    #########################################################
+    #size = 300
+
+    #data_folder_path = r"H:\projectWPD\data"
+    #voc              = VOCUtils(data_folder_path)
+    
+    #dataset1         = voc.make_dataset(r"VOC2007", r"trainval.txt", transform=CustomAugmentation(size=size))
+    #dataset2         = voc.make_dataset(r"VOC2012", r"trainval.txt", transform=CustomAugmentation(size=size))
+    #dataset          = data.ConcatDataset([dataset1, dataset2])
+
+    #dataloader       = data.DataLoader(dataset, 32, True, num_workers=6, collate_fn=collate_fn, pin_memory=True)
+    #criterion  = MultiBoxLoss(num_classes=21)
+    #model = augFPN_SSD300(n_classes=21)
+    #########################################################
+
+    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_80000.pth"
+    dataloader, model, criterion = train_on_VOC(version="original", size=512, pretrain_path=pretrain_path)
     #dataloader, model, criterion = train_on_COCO()
 
     biases     = []
@@ -112,6 +128,6 @@ if __name__ == "__main__":
             else:
                 not_biases.append(param)
 
-    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
+    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-4}, {'params' : not_biases}], lr=1e-4, momentum=0.9, weight_decay=5e-4)
 
-    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000), max_iter=120000)
+    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 120000), max_iter=150000)

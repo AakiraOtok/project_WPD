@@ -3,7 +3,7 @@ from utils.lib import *
 class VGG16Base(nn.Module):
     """
     Lấy VGG16 làm base network, tuy nhiên cần có một vài thay đổi:
-    - Đầu vào ảnh là 512x512 thay vì 224x224, các comment bên dưới sẽ áp dụng cho đầu vào 512x512
+    - Đầu vào ảnh là 300x300 thay vì 224x224, các comment bên dưới sẽ áp dụng cho đầu vào 300x300
     - Lớp pooling thứ 3 sử dụng ceiling mode thay vì floor mode
     - Lớp pooling thứ 5 kernel size (2, 2) -> (3, 3) và stride 2 -> 1, và padding = 1
     - Ta downsample (decimate) parameter fc6 và fc7 để tạo thành conv6 và conv7, loại bỏ hoàn toàn fc8
@@ -86,42 +86,45 @@ class VGG16Base(nn.Module):
 
     def forward(self, images):
         """
-        :param images, tensor [N, 3, 512, 512]
+        :param images, tensor [N, 3, 300, 300]
 
         return:
         """
-        out = F.relu(self.conv1_1(images)) # [N, 64, 512, 512]
-        out = F.relu(self.conv1_2(out))    # [N, 64, 512, 512]
-        out = self.pool1(out)              # [N, 64, 256, 256]
+        out = F.relu(self.conv1_1(images)) # [N, 64, 300, 300]
+        out = F.relu(self.conv1_2(out))    # [N, 64, 300, 300]
+        out = self.pool1(out)              # [N, 64, 150, 150]
 
-        out = F.relu(self.conv2_1(out))    # [N, 128, 256, 256]
-        out = F.relu(self.conv2_2(out))    # [N, 128, 256, 256]
-        out = self.pool2(out)              # [N, 128, 128, 128]
+        out = F.relu(self.conv2_1(out))    # [N, 128, 150, 150]
+        out = F.relu(self.conv2_2(out))    # [N, 128, 150, 150]
+        out = self.pool2(out)              # [N, 128, 75, 75]
 
-        out = F.relu(self.conv3_1(out))    # [N, 256, 128, 128]
-        out = F.relu(self.conv3_2(out))    # [N, 256, 128, 128]
-        out = F.relu(self.conv3_3(out))    # [N, 256, 128, 128]
-        out = self.pool3(out)              # [N, 256, 64, 64] 
+        out = F.relu(self.conv3_1(out))    # [N, 256, 75, 75]
+        out = F.relu(self.conv3_2(out))    # [N, 256, 75, 75]
+        out = F.relu(self.conv3_3(out))    # [N, 256, 75, 75]
+        out = self.pool3(out)              # [N, 256, 38, 38] không phải [N, 256, 37, 37] do ceiling mode = True
 
-        out = F.relu(self.conv4_1(out))    # [N, 512, 64, 64]
-        out = F.relu(self.conv4_2(out))    # [N, 512, 64, 64]
-        out = F.relu(self.conv4_3(out))    # [N, 512, 64, 64]
-        conv4_3_feats = out                # [N, 512, 64, 64]
-        out = self.pool4(out)              # [N, 512, 32, 32]
+        out = F.relu(self.conv4_1(out))    # [N, 512, 38, 38]
+        out = F.relu(self.conv4_2(out))    # [N, 512, 38, 38]
+        out = F.relu(self.conv4_3(out))    # [N, 512, 38, 38]
+        conv4_3_feats = out                # [N, 512, 38, 38]
+        out = self.pool4(out)              # [N, 512, 19, 19]
 
-        out = F.relu(self.conv5_1(out))    # [N, 512, 32, 32]
-        out = F.relu(self.conv5_2(out))    # [N, 512, 32, 32]
-        out = F.relu(self.conv5_3(out))    # [N, 512, 32, 32]
-        out = self.pool5(out)              # [N, 512, 32, 32], layer pooling này không làm thay đổi size features map
+        out = F.relu(self.conv5_1(out))    # [N, 512, 19, 19]
+        out = F.relu(self.conv5_2(out))    # [N, 512, 19, 19]
+        out = F.relu(self.conv5_3(out))    # [N, 512, 19, 19]
+        out = self.pool5(out)              # [N, 512, 19, 19], layer pooling này không làm thay đổi size features map
 
-        out = F.relu(self.conv6(out))      # [N, 1024, 32, 32]
+        out = F.relu(self.conv6(out))      # [N, 1024, 19, 19]
 
-        conv7_feats = F.relu(self.conv7(out)) # [N, 1024, 32, 32]
+        conv7_feats = F.relu(self.conv7(out)) # [N, 1024, 19, 19]
 
-        return conv4_3_feats, conv7_feats     # [N, 512, 64, 64], [N, 1024, 32, 32]
+        return conv4_3_feats, conv7_feats
     
 
 class AuxiliraryConvolutions(nn.Module):
+    """ Sau base network (vgg16) sẽ là các lớp conv phụ trợ
+    Feature Pyramid Network
+    """
 
     def __init__(self):
         super().__init__()
@@ -133,14 +136,10 @@ class AuxiliraryConvolutions(nn.Module):
         self.conv9_2  = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1)
 
         self.conv10_1 = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=1, padding=0)
-        self.conv10_2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1)
+        self.conv10_2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=0)
 
         self.conv11_1 = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=1, padding=0)
-        self.conv11_2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1)
-
-        self.conv12_1 = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=1, padding=0)
-        self.conv12_2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, padding=1)
-
+        self.conv11_2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=0)
 
     def init_conv2d(self):
         """
@@ -152,72 +151,68 @@ class AuxiliraryConvolutions(nn.Module):
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
 
+
     def forward(self, conv7_feats):
         """
-        :param conv8_feats, tensor [N, 1024, 32, 32]
+        :param conv8_feats, tensor [N, 1024, 19, 19]
         """
 
-        out = F.relu(self.conv8_1(conv7_feats))   # [N, 256, 32, 32]
-        out = F.relu(self.conv8_2(out))           # [N, 512, 16, 16]
-        conv8_2_feats = out                       # [N, 512, 16, 16]
+        out = F.relu(self.conv8_1(conv7_feats))   # [N, 256, 19, 19]
+        out = F.relu(self.conv8_2(out))           # [N, 512, 10, 10]
+        conv8_2_feats = out                       # [N, 512, 10, 10]
 
-        out = F.relu(self.conv9_1(out))           # [N, 128, 16, 16]
-        out = F.relu(self.conv9_2(out))           # [N, 256, 8, 8]
-        conv9_2_feats = out                       # [N, 256, 8, 8]
+        out = F.relu(self.conv9_1(out))           # [N, 128, 10, 10]
+        out = F.relu(self.conv9_2(out))           # [N, 256, 5, 5]
+        conv9_2_feats = out                       # [N, 256, 5, 5]
 
-        out = F.relu(self.conv10_1(out))          # [N, 128, 8, 8]
-        out = F.relu(self.conv10_2(out))          # [N, 256, 4, 4]
-        conv10_2_feats = out                      # [N, 256, 4, 4]
+        out = F.relu(self.conv10_1(out))          # [N, 128, 5, 5]
+        out = F.relu(self.conv10_2(out))          # [N, 256, 3, 3]
+        conv10_2_feats = out                      # [N, 256, 3, 3]
 
-        out = F.relu(self.conv11_1(out))          # [N, 128, 4, 4]
-        out = F.relu(self.conv11_2(out))          # [N, 256, 2, 2]
-        conv11_2_feats = out     
+        out = F.relu(self.conv11_1(out))          # [N, 128, 3, 3]
+        conv11_2_feats = F.relu(self.conv11_2(out))          # [N, 256, 1, 1]
 
-        out = F.relu(self.conv12_1(out))          # [N, 128, 2, 2]
-        out = F.relu(self.conv12_2(out))          # [N, 256, 1, 1]
-        conv12_2_feats = out
-
-        return conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats, conv12_2_feats
+        return conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats
     
-
 class FPNConvolutions(nn.Module):
     """ 
-    conv3_3_feats  : [N, 256, 128, 128]
-    conv4_3_feats  : [N, 512, 64, 64]
-    conv7_feats    : [N, 1024, 32, 32]
-    conv8_2_feats  : [N, 512, 16, 16]
-    conv9_2_feats  : [N, 256, 8, 8]
-    conv10_2_feats : [N, 256, 4, 4]
-    conv11_2_feats : [N, 256, 2, 2]
-    conv12_2_feats : [N, 256, 1, 1]
+    conv3_3_feats  : [N, 256, 75, 75]
+    conv4_3_feats  : [N, 512, 38, 38]
+    conv7_feats    : [N, 1024, 19, 19]
+    conv8_2_feats  : [N, 512, 10, 10]
+    conv9_2_feats  : [N, 256, 5, 5]
+    conv10_2_feats : [N, 256, 3, 3]
+    conv11_2_feats : [N, 256, 1, 1]
     """
 
     def __init__(self):
         super().__init__()
 
-        self.fp6_upsample  = nn.Upsample(scale_factor=2, mode="bilinear")
-        self.fp6_conv1     = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1, bias=False)
-        self.fp6_bn        = nn.BatchNorm2d(num_features=256)
+        self.fp5_upsample = nn.Upsample(scale_factor=3, mode="bilinear")
+        self.fp5_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
+        self.fp5_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, bias=False)
+        self.fp5_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp5_upsample  = nn.Upsample(scale_factor=2, mode="bilinear")
-        self.fp5_conv1     = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1, bias=False)
-        self.fp5_bn        = nn.BatchNorm2d(num_features=256)
+        self.fp4_upsample = nn.Upsample(scale_factor=5/3, mode="bilinear")
+        self.fp4_conv1    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1)
+        self.fp4_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, bias=False)
+        self.fp4_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp4_upsample  = nn.Upsample(scale_factor=2, mode="bilinear")
-        self.fp4_conv1     = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1, bias=False)
-        self.fp4_bn        = nn.BatchNorm2d(num_features=256)
+        self.fp3_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
+        self.fp3_conv1    = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
+        self.fp3_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, bias=False)
+        self.fp3_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp3_upsample  = nn.Upsample(scale_factor=2, mode="bilinear")
-        self.fp3_conv1     = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, bias=False)
-        self.fp3_bn        = nn.BatchNorm2d(num_features=512)
+        self.fp2_upsample = nn.Upsample(scale_factor=1.9, mode="bilinear")
+        self.fp2_conv1    = nn.Conv2d(in_channels=1024, out_channels=256, kernel_size=1)
+        self.fp2_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, bias=False)
+        self.fp2_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp2_upsample  = nn.Upsample(scale_factor=2, mode="bilinear")
-        self.fp2_conv1     = nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=1, bias=False)
-        self.fp2_bn        = nn.BatchNorm2d(num_features=1024)
+        self.fp1_upsample = nn.Upsample(scale_factor=2, mode="bilinear")
+        self.fp1_conv1    = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1)
+        self.fp1_conv2    = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, bias=False)
+        self.fp1_bn       = nn.BatchNorm2d(num_features=256)
 
-        self.fp1_upsample  = nn.Upsample(scale_factor=2, mode="bilinear")
-        self.fp1_conv1     = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1, bias=False)
-        self.fp1_bn        = nn.BatchNorm2d(num_features=512)
 
     def init_conv2d(self):
         """
@@ -229,44 +224,36 @@ class FPNConvolutions(nn.Module):
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
 
-    def forward(self, conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats, conv12_2_feats):
+    def forward(self, conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats ,conv11_2_feats):
 
-        fp7_feats = conv12_2_feats
+        fp6_feats = conv11_2_feats
 
-        out = self.fp6_upsample(conv12_2_feats)
-        out = self.fp6_conv1(out)
-        out = F.relu(out + conv11_2_feats)
-        fp6_feats = self.fp6_bn(out)
-
-        out = self.fp5_upsample(out)
-        out = self.fp5_conv1(out)
-        out = F.relu(out + conv10_2_feats)
-        fp5_feats = self.fp5_bn(out)
+        out = self.fp5_upsample(conv11_2_feats)
+        out = F.relu(out + self.fp5_conv1(conv10_2_feats))
+        fp5_feats = self.fp5_bn(self.fp5_conv2(out))
 
         out = self.fp4_upsample(out)
-        out = self.fp4_conv1(out)
-        out = F.relu(out + conv9_2_feats)
-        fp4_feats = self.fp4_bn(out)
+        out = F.relu(out + self.fp4_conv1(conv9_2_feats))
+        fp4_feats = self.fp4_bn(self.fp4_conv2(out))
 
         out = self.fp3_upsample(out)
-        out = self.fp3_conv1(out)
-        out = F.relu(out + conv8_2_feats)
-        fp3_feats = self.fp3_bn(out)
+        out = F.relu(out + self.fp3_conv1(conv8_2_feats))
+        fp3_feats = self.fp3_bn(self.fp3_conv2(out))
 
         out = self.fp2_upsample(out)
-        out = self.fp2_conv1(out)
-        out = F.relu(out + conv7_feats)
-        fp2_feats = self.fp2_bn(out)
+        out = F.relu(out + self.fp2_conv1(conv7_feats))
+        fp2_feats = self.fp2_bn(self.fp2_conv2(out))
 
         out = self.fp1_upsample(out)
-        out = self.fp1_conv1(out)
-        out = F.relu(out + conv4_3_feats)
-        fp1_feats = self.fp1_bn(out)
+        out = F.relu(out + self.fp1_conv1(conv4_3_feats))
+        fp1_feats = self.fp1_bn(self.fp1_conv2(out)) 
 
-        return fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats, fp7_feats
-    
+        return fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats
 
 class PredictionConvolutions(nn.Module):
+    """Layer cuối là để predict offset và conf
+
+    """
 
     def __init__(self, n_classes=21):
         super().__init__()
@@ -278,30 +265,26 @@ class PredictionConvolutions(nn.Module):
             'fp2' : 6,
             'fp3' : 6,
             'fp4' : 6,
-            'fp5' : 6,
-            'fp6' : 4,
-            'fp7' : 4
+            'fp5' : 4,
+            'fp6' : 4
         }
 
         # kernel size = 3 và padding = 1 không làm thay đổi kích thước feature map 
 
-        self.loc_fp1  = nn.Conv2d(512,  n_boxes['fp1']*4, kernel_size=3, padding=1)
-        self.loc_fp2  = nn.Conv2d(1024, n_boxes['fp2']*4, kernel_size=3, padding=1)
-        self.loc_fp3  = nn.Conv2d(512,  n_boxes['fp3']*4, kernel_size=3, padding=1)
-        self.loc_fp4  = nn.Conv2d(256,  n_boxes['fp4']*4, kernel_size=3, padding=1)
-        self.loc_fp5  = nn.Conv2d(256,  n_boxes['fp5']*4, kernel_size=3, padding=1)
-        self.loc_fp6  = nn.Conv2d(256,  n_boxes['fp6']*4, kernel_size=3, padding=1)
-        self.loc_fp7  = nn.Conv2d(256,  n_boxes['fp7']*4, kernel_size=3, padding=1)
+        self.loc_fp6  = nn.Conv2d(256,   n_boxes['fp6']*4, kernel_size=3, padding=1)
+        self.loc_fp5  = nn.Conv2d(256,   n_boxes['fp5']*4, kernel_size=3, padding=1)
+        self.loc_fp4  = nn.Conv2d(256,   n_boxes['fp4']*4, kernel_size=3, padding=1)
+        self.loc_fp3  = nn.Conv2d(256,   n_boxes['fp3']*4, kernel_size=3, padding=1)
+        self.loc_fp2  = nn.Conv2d(256,   n_boxes['fp2']*4, kernel_size=3, padding=1)
+        self.loc_fp1  = nn.Conv2d(256,   n_boxes['fp1']*4, kernel_size=3, padding=1)
 
 
-        self.conf_fp1  = nn.Conv2d(512,  n_boxes['fp1']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp2  = nn.Conv2d(1024, n_boxes['fp2']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp3  = nn.Conv2d(512,  n_boxes['fp3']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp4  = nn.Conv2d(256,  n_boxes['fp4']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp5  = nn.Conv2d(256,  n_boxes['fp5']*n_classes, kernel_size=3, padding=1)
         self.conf_fp6  = nn.Conv2d(256,  n_boxes['fp6']*n_classes, kernel_size=3, padding=1)
-        self.conf_fp7  = nn.Conv2d(256,  n_boxes['fp7']*n_classes, kernel_size=3, padding=1)
-        
+        self.conf_fp5  = nn.Conv2d(256,  n_boxes['fp5']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp4  = nn.Conv2d(256,  n_boxes['fp4']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp3  = nn.Conv2d(256,  n_boxes['fp3']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp2  = nn.Conv2d(256,  n_boxes['fp2']*n_classes, kernel_size=3, padding=1)
+        self.conf_fp1  = nn.Conv2d(256,  n_boxes['fp1']*n_classes, kernel_size=3, padding=1)
 
     def init_conv2d(self):
         """
@@ -313,14 +296,13 @@ class PredictionConvolutions(nn.Module):
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
 
-
-    def forward(self, fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats, fp7_feats):
+    def forward(self, fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats):
 
         batch_size = fp1_feats.shape[0]
 
 
         loc_fp1   = self.loc_fp1(fp1_feats)
-        loc_fp1  = loc_fp1.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, 4)
+        loc_fp1   = loc_fp1.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, 4)
         
         loc_fp2     = self.loc_fp2(fp2_feats)
         loc_fp2     = loc_fp2.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, 4)
@@ -336,9 +318,6 @@ class PredictionConvolutions(nn.Module):
 
         loc_fp6   = self.loc_fp6(fp6_feats)
         loc_fp6   = loc_fp6.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, 4)
-
-        loc_fp7   = self.loc_fp7(fp7_feats)
-        loc_fp7   = loc_fp7.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, 4)
 
 
 
@@ -360,16 +339,15 @@ class PredictionConvolutions(nn.Module):
         conf_fp6   = self.conf_fp6(fp6_feats)
         conf_fp6   = conf_fp6.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, self.n_classes)
 
-        conf_fp7   = self.conf_fp7(fp7_feats)
-        conf_fp7   = conf_fp7.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, self.n_classes)
 
-        loc  = torch.cat((loc_fp1, loc_fp2, loc_fp3, loc_fp4, loc_fp5, loc_fp6, loc_fp7), dim=1)
-        conf = torch.cat((conf_fp1, conf_fp2, conf_fp3, conf_fp4, conf_fp5, conf_fp6, conf_fp7), dim=1)
+        loc  = torch.cat((loc_fp1, loc_fp2, loc_fp3, loc_fp4, loc_fp5, loc_fp6), dim=1)
+        conf = torch.cat((conf_fp1, conf_fp2, conf_fp3, conf_fp4, conf_fp5, conf_fp6), dim=1)
 
         return loc, conf
+        
     
 class L2Norm(nn.Module):
-    def __init__(self, input_channel=512, scale=20):
+    def __init__(self, input_channel, scale=20.):
         super().__init__()
         self.scale_factors = nn.Parameter(torch.FloatTensor(1, input_channel, 1, 1))
         self.eps           = 1e-10
@@ -380,7 +358,7 @@ class L2Norm(nn.Module):
         tensor = tensor/(norm + self.eps)*self.scale_factors
         return tensor
     
-class FPN_SSD512(nn.Module):
+class augFPN_SSD300(nn.Module):
 
     def __init__(self, pretrain_path = None, data_train_on = "VOC", n_classes = 21):
         super().__init__()
@@ -389,8 +367,8 @@ class FPN_SSD512(nn.Module):
         self.data_train_on = data_train_on
         self.base_net    = VGG16Base()
         self.auxi_conv   = AuxiliraryConvolutions()
-        self.pred_conv   = PredictionConvolutions(n_classes) 
         self.fp_conv     = FPNConvolutions()
+        self.pred_conv   = PredictionConvolutions(n_classes) 
         self.l2_conv4_3  = L2Norm(input_channel=512)
 
         if pretrain_path is not None:
@@ -403,11 +381,10 @@ class FPN_SSD512(nn.Module):
 
     def create_prior_boxes(self):
         """ 
-        Tạo prior boxes (tensor) như trong paper
         mỗi box có dạng [cx, cy, w, h] được scale
         """
         # kích thước feature map tương ứng
-        fmap_sizes    = [64, 32, 16, 8, 4, 2, 1]
+        fmap_sizes    = [38, 19, 10, 5, 3, 1]
         
         # scale như trong paper và được tính sẵn thay vì công thức
         # lưu ý ở conv4_3, tác giả xét như một trường hợp đặc biệt (scale 0.1):
@@ -416,20 +393,19 @@ class FPN_SSD512(nn.Module):
         # "For SSD512 model, we add extra conv12 2 for prediction, set smin to 0.15, and 0.07 on conv4 3...""
 
         if self.data_train_on == "VOC":
-            box_scales    = [0.07, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9]
+            box_scales    = [0.1, 0.2, 0.375, 0.55, 0.725, 0.9]
         elif self.data_train_on == "COCO":
-            box_scales    = [0.04, 0.1, 0.26, 0.42, 0.58, 0.74, 0.9] 
+            box_scales    = [0.07, 0.15, 0.3375, 0.525, 0.7125, 0.9] 
             
         aspect_ratios = [
                 [1., 2., 0.5],
                 [1., 2., 3., 0.5, 0.333],
                 [1., 2., 3., 0.5, 0.333],
                 [1., 2., 3., 0.5, 0.333],
-                [1., 2., 3., 0.5, 0.333],
                 [1., 2., 0.5],
                 [1., 2., 0.5]
             ]
-        dboxes = [] 
+        dboxes = []
         
         
         for idx, fmap_size in enumerate(fmap_sizes):
@@ -460,21 +436,20 @@ class FPN_SSD512(nn.Module):
         return dboxes
 
     def forward(self, images):
-        conv4_3_feats, conv7_feats                                                   = self.base_net(images)
-        conv4_3_feats                                                                = self.l2_conv4_3(conv4_3_feats)
-        conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats, conv12_2_feats = self.auxi_conv(conv7_feats)
+        conv4_3_feats, conv7_feats                         = self.base_net(images)
+        conv4_3_feats                                                     = self.l2_conv4_3(conv4_3_feats)
+        conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats      = self.auxi_conv(conv7_feats)
 
-        FP1_feats, FP2_feats, FP3_feats, FP4_feats, FP5_feats, FP6_feats, FP7_feats  = self.fp_conv(conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats, conv12_2_feats)
+        FP1_feats, FP2_feats, FP3_feats, FP4_feats, FP5_feats, FP6_feats = self.fp_conv(conv4_3_feats, conv7_feats, conv8_2_feats, conv9_2_feats, conv10_2_feats, conv11_2_feats)
 
-        loc, conf = self.pred_conv(FP1_feats, FP2_feats, FP3_feats, FP4_feats, FP5_feats, FP6_feats, FP7_feats)
-        return loc, conf
+        loc, conf  = self.pred_conv(FP1_feats, FP2_feats, FP3_feats, FP4_feats, FP5_feats, FP6_feats)
+        return loc, conf 
+
 
 
 if __name__ == "__main__":
-    T = FPN_SSD512()
-    imgs = torch.Tensor(1, 3, 512, 512)
-    loc, conf = T(imgs)
+    T = FPN_SSD300()
+    img = torch.ones(1, 3, 300, 300)
+    loc, conf = T(img)
     print(loc.shape)
     print(conf.shape)
-
-    

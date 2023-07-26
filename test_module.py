@@ -40,20 +40,20 @@ from model.FPN_SSD300 import FPN_SSD300
 #b = torch.FloatTensor(5)
 #print(torch.pow(b, a))
 
-#model = FPN_SSD300()
-#model = SSD300()
-#t = sum(p.numel() for p in model.parameters())
-#print(t)
+model = FPN_SSD300()
+model = SSD512()
+t = sum(p.numel() for p in model.parameters())
+print(t)
 
-from utils.augmentations_utils import CustomAugmentation
+#from utils.augmentations_utils import CustomAugmentation
 
-data_folder_path = r"H:\projectWPD\data"
-voc              = VOCUtils(data_folder_path)
+#data_folder_path = r"H:\projectWPD\data"
+#voc              = VOCUtils(data_folder_path)
 
-dataset = voc.make_dataset("VOC2007", file_txt='test.txt', transform=CustomAugmentation(), phase='train')
-for i in range(dataset.__len__()):
-    img, a, b, c = dataset.__getitem__(i)
-    print(img.shape)
-    img = img.detach().permute(1, 2, 0).contiguous().cpu().numpy()
-    cv2.imshow('img', img)
-    cv2.waitKey()
+#dataset = voc.make_dataset("VOC2007", file_txt='test.txt', transform=CustomAugmentation(), phase='train')
+#for i in range(dataset.__len__()):
+    #img, a, b, c = dataset.__getitem__(i)
+    #print(img.shape)
+    #img = img.detach().permute(1, 2, 0).contiguous().cpu().numpy()
+    #cv2.imshow('img', img)
+    #cv2.waitKey()
