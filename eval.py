@@ -1,7 +1,7 @@
 from utils.lib import *
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
-from model.FPN_SSD300 import FPN_SSD300
+from model.FPN_SSD300_a import FPN_SSD300
 from utils.VOC_utils import VOCUtils
 from utils.COCO_utils import COCOUtils
 from utils.box_utils import Non_Maximum_Suppression, jaccard
@@ -201,19 +201,9 @@ def eval_on_COCO(pretrain_path, version="original", size=300):
     
     return dataset, model
 
-from utils.lib import *
-from utils.VOC_utils import VOCUtils, collate_fn
-from utils.COCO_utils import COCOUtils, COCO_collate_fn
-from model.SSD300 import SSD300
-from model.SSD512 import SSD512
-from model.FPN_SSD300 import FPN_SSD300
-from model.FPN_SSD512 import FPN_SSD512
-from utils.box_utils import MultiBoxLoss
-from utils.augmentations_utils import CustomAugmentation
-from model.aug_FPNSSD300 import augFPN_SSD300
 if __name__ == "__main__":
 
-    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_140000.pth"
+    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_120000.pth"
     size          = 512
     num_classes   = 21
 

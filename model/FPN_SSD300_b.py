@@ -296,7 +296,7 @@ class PredictionConvolutions(nn.Module):
         Initialize convolution parameters.
         """
         for c in self.children():
-            if isinstance(c, nn.Conv2d):
+            if isinstance(c, nn.Conv2d): 
                 nn.init.xavier_uniform_(c.weight)
                 if c.bias is not None:
                     nn.init.constant_(c.bias, 0.)
@@ -363,7 +363,7 @@ class L2Norm(nn.Module):
         tensor = tensor/(norm + self.eps)*self.scale_factors
         return tensor
     
-class augFPN_SSD300(nn.Module):
+class FPN_SSD300(nn.Module):
 
     def __init__(self, pretrain_path = None, data_train_on = "VOC", n_classes = 21):
         super().__init__()
