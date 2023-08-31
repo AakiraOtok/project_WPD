@@ -1,7 +1,7 @@
 from utils.lib import *
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
-from model.FPN_SSD300_a import FPN_SSD300
+from model.FPN_SSD300_b import FPN_SSD300
 from utils.VOC_utils import VOCUtils
 from utils.COCO_utils import COCOUtils
 from utils.box_utils import Non_Maximum_Suppression, jaccard

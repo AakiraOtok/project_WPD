@@ -224,23 +224,23 @@ class FPNConvolutions(nn.Module):
         fp6_feats = conv11_2_feats
 
         out = self.fp5_upsample(conv11_2_feats)
-        out = F.relu(F.relu(self.fp5_conv1(out)) + conv10_2_feats)
+        out = F.relu(self.fp5_conv1(out) + conv10_2_feats)
         fp5_feats = self.fp5_bn(out)
 
         out = self.fp4_upsample(out)
-        out = F.relu(F.relu(self.fp4_conv1(out)) + conv9_2_feats)
+        out = F.relu(self.fp4_conv1(out) + conv9_2_feats)
         fp4_feats = self.fp4_bn(out)
 
         out = self.fp3_upsample(out)
-        out = F.relu(F.relu(self.fp3_conv1(out)) + conv8_2_feats)
+        out = F.relu(self.fp3_conv1(out) + conv8_2_feats)
         fp3_feats = self.fp3_bn(out)
 
         out = self.fp2_upsample(out)
-        out = F.relu(F.relu(self.fp2_conv1(out)) + conv7_feats)
+        out = F.relu(self.fp2_conv1(out) + conv7_feats)
         fp2_feats = self.fp2_bn(out)
 
         out = self.fp1_upsample(out)
-        out = F.relu(F.relu(self.fp1_conv1(out)) + conv4_3_feats)
+        out = F.relu(self.fp1_conv1(out) + conv4_3_feats)
         fp1_feats = self.fp1_bn(out)
 
         return fp1_feats, fp2_feats, fp3_feats, fp4_feats, fp5_feats, fp6_feats

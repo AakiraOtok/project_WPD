@@ -3,7 +3,7 @@ from utils.VOC_utils import VOCUtils, collate_fn
 from utils.COCO_utils import COCOUtils, COCO_collate_fn
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
-from model.FPN_SSD300_a import FPN_SSD300
+from model.FPN_SSD300_b import FPN_SSD300
 from model.FPN_SSD512 import FPN_SSD512
 from utils.box_utils import MultiBoxLoss
 from utils.augmentations_utils import CustomAugmentation
