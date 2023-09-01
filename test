@@ -1,0 +1,6 @@
+from model.FPN_SSD300_a import FPN_SSD300
+from model.SSD300 import SSD300
+
+model = FPN_SSD300()
+num_params = sum(p.numel() for p in model.parameters())
+print("Số lượng tham số trong mô hình:", num_params)

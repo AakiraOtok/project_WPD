@@ -1,7 +1,7 @@
 from utils.lib import *
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
-from model.FPN_SSD300_a import FPN_SSD300
+from model.FPN_SSD300_c import FPN_SSD300
 from model.FPN_SSD512 import FPN_SSD512
 from utils.VOC_utils import VOCUtils, VOC_idx2name, VOC_name2idx
 from utils.COCO_utils import COCOUtils, COCO_idx2name, COCO_name2idx
