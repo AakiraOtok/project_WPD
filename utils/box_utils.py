@@ -2,7 +2,7 @@ from utils.lib import *
 
 # adapted from https://inside-machinelearning.com/en/bounding-boxes-python-function/
 # một chút sửa đổi để phù hợp với mục đích sử dụng
-def box_label(image, box, label=None, color=(128, 128, 128), txt_color=(255, 255, 255)):
+def box_label(image, box, label=None, color=(100, 0, 0), txt_color=(255, 255, 255)):
   """
   :param image : np array [H, W, C] (BGR)
   :param label : text, default = None

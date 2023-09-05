@@ -120,8 +120,7 @@ class SOHAS_dataset(data.Dataset):
         labels       = np.array(temp)
         difficulties = np.array(difficulties)
 
-        image, bboxes, labels, difficulties = self.transform(image, bboxes, labels, difficulties, self.phase)
-        print(bboxes)
+        image, bboxes, labels, difficulties = self.transform(image, bboxes, labels, difficulties, self.phase) 
 
         image        = torch.FloatTensor(image[:, :, (2, 1, 0)]).permute(2, 0, 1).contiguous()
         bboxes       = torch.FloatTensor(bboxes)

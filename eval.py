@@ -1,9 +1,10 @@
 from utils.lib import *
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
-from model.FPN_SSD300_a import FPN_SSD300
+from model.FPN_SSD300_b import FPN_SSD300
 from utils.VOC_utils import VOCUtils
 from utils.COCO_utils import COCOUtils
+from utils.SOHAS_utils import SOHAS_dataset
 from utils.box_utils import Non_Maximum_Suppression, jaccard
 from utils.augmentations_utils import CustomAugmentation
 
@@ -201,13 +202,27 @@ def eval_on_COCO(pretrain_path, version="original", size=300):
     
     return dataset, model
 
+def eval_on_SOHAS(pretrain_path, version="original", size=300):
+    data_folder_path = r"H:\data"
+    dataset = SOHAS_dataset(data_folder_path, r'train', CustomAugmentation(size=size), phase='valid')
+    if version == "original":
+        if size==300:
+            model = SSD300(pretrain_path, n_classes=7)
+        elif size==512:
+            model = SSD512(pretrain_path, n_classes=7)
+    elif version == "FPN":
+        if size == 300:
+            model = FPN_SSD300(pretrain_path=pretrain_path, n_classes=7)
+    
+    return dataset, model
+
 if __name__ == "__main__":
 
-    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_120000.pth"
-    size          = 512
-    num_classes   = 21
+    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_10000.pth"
+    size          = 300
+    num_classes   = 7
 
-    dataset, model = eval_on_VOC(pretrain_path, version="original", size=size)
+    dataset, model = eval_on_SOHAS(pretrain_path, version="FPN", size=size)
     #dataset, model = eval_on_COCO(pretrain_path, size=size)
 
     #########################################################

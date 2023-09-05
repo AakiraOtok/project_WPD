@@ -1,9 +1,10 @@
 from utils.lib import *
 from utils.VOC_utils import VOCUtils, collate_fn
 from utils.COCO_utils import COCOUtils, COCO_collate_fn
+from utils.SOHAS_utils import SOHAS_dataset
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
-from model.FPN_SSD300_a import FPN_SSD300
+from model.FPN_SSD300_b import FPN_SSD300
 from model.FPN_SSD512 import FPN_SSD512
 from utils.box_utils import MultiBoxLoss
 from utils.augmentations_utils import CustomAugmentation
@@ -108,6 +109,27 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
 
     return dataloader, model, criterion
 
+def train_on_SOHAS(size=300, version="original", pretrain_path=None):
+    data_folder_path = r"H:\data"
+    dataset = SOHAS_dataset(data_folder_path, r'train', CustomAugmentation(size=size), phase='train')
+
+    dataloader       = data.DataLoader(dataset, 32, True, num_workers=1, collate_fn=collate_fn, pin_memory=True)
+
+    if version == "original":
+        if size==300:
+            model = SSD300(n_classes=7, pretrain_path=pretrain_path)
+        elif size==512:
+            model = SSD512(n_classes=7, pretrain_path=pretrain_path)
+    elif version == "FPN":
+        if size == 300:
+            model = FPN_SSD300(n_classes=7, pretrain_path=pretrain_path)
+        elif size == 512:
+            model = FPN_SSD512(n_classes=7, pretrain_path=pretrain_path)
+
+    criterion  = MultiBoxLoss(num_classes=7)
+
+    return dataloader, model, criterion
+
 if __name__ == "__main__":
 
     #########################################################
@@ -125,9 +147,9 @@ if __name__ == "__main__":
     #model = augFPN_SSD300(n_classes=21)
     #########################################################
 
-    #pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_80000.pth"
-    pretrain_path = None
-    dataloader, model, criterion = train_on_COCO(version="FPN", size=300, pretrain_path=pretrain_path)
+    pretrain_path = r"H:\checkpoint\iteration_120000_b_78.29.pth"
+    #623pretrain_path = None
+    dataloader, model, criterion = train_on_VOC(version="FPN", size=300, pretrain_path=pretrain_path)
     #dataloader, model, criterion = train_on_COCO()
 
     biases     = []
@@ -141,4 +163,4 @@ if __name__ == "__main__":
 
     optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
-    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(280000, 360000, 400000), max_iter=400000)
+    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(40000, 50000), max_iter=600000)
