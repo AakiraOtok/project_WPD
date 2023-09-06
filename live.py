@@ -1,6 +1,7 @@
 from utils.lib import *
 from model.SSD300 import SSD300
 from model.SSD512 import SSD512
+from ssd import build_ssd
 from utils.box_utils import draw_bounding_box, Non_Maximum_Suppression
 from utils.VOC_utils import VOC_name2idx, VOC_idx2name
 from utils.augmentations_utils import CustomAugmentation
@@ -44,7 +45,8 @@ if __name__ == "__main__":
     n_classes     = 21
 
     #model = SSD300(pretrain_path, n_classes=n_classes)
-    model = SSD512(pretrain_path, n_classes=n_classes)
+    #model = SSD512(pretrain_path, n_classes=n_classes)
+    model = build_ssd('test', 300, 21)
     model.eval()
 
     cam   = cv2.VideoCapture(0)
