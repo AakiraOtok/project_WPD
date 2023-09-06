@@ -52,7 +52,7 @@ def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(8000
 
             print("iteration : {}, time = {}, loss = {}".format(iteration + 1, round(time.time() - t_batch, 2), loss))
                 # save lại mỗi 10000 iteration
-            if (iteration + 1) % 1000 == 0:
+            if (iteration + 1) % 10000 == 0:
                 torch.save(model.state_dict(), r"H:\projectWPD\VOC_checkpoint\iteration_" + str(iteration + 1) + ".pth")
                 print("Saved model at iteration : {}".format(iteration + 1))
                 if iteration + 1 == max_iter:
@@ -147,8 +147,8 @@ if __name__ == "__main__":
     #model = augFPN_SSD300(n_classes=21)
     #########################################################
 
-    #pretrain_path = r"H:\checkpoint\iteration_120000_b_78.29.pth"
-    pretrain_path = None
+    pretrain_path = r"H:\checkpoint\iteration_120000_b_78.29.pth"
+    #623pretrain_path = None
     dataloader, model, criterion = train_on_VOC(version="FPN", size=300, pretrain_path=pretrain_path)
     #dataloader, model, criterion = train_on_COCO()
 
@@ -161,6 +161,6 @@ if __name__ == "__main__":
             else:
                 not_biases.append(param)
 
-    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-6}, {'params' : not_biases}], lr=1e-6, momentum=0.9, weight_decay=5e-4)
+    optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
-    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000, 120000), max_iter=150000)
+    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(40000, 50000), max_iter=600000)
