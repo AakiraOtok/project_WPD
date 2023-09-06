@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from torch.autograd import Variable
 from layers import *
-from data import voc, coco
+from data import voc
 import os
 from emb import EMB
 

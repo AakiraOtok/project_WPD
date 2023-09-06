@@ -7,9 +7,63 @@ from utils.VOC_utils import VOC_name2idx, VOC_idx2name
 from utils.augmentations_utils import CustomAugmentation
 from collections import deque
 
+def create_prior_boxes():
+    """ 
+    Tạo 8732 prior boxes (tensor) như trong paper
+    mỗi box có dạng [cx, cy, w, h] được scale
+    """
+    # kích thước feature map tương ứng
+    fmap_sizes    = [38, 19, 10, 5, 3, 1]
+        
+    # scale như trong paper và được tính sẵn thay vì công thức
+    # lưu ý ở conv4_3, tác giả xét như một trường hợp đặc biệt (scale 0.1):
+    # Ở mục 3.1, trang 7 : 
+    # "We set default box with scale 0.1 on conv4 3 .... "
+    # "For SSD512 model, we add extra conv12 2 for prediction, set smin to 0.15, and 0.07 on conv4 3...""
+    box_scales    = [0.1, 0.2, 0.375, 0.55, 0.725, 0.9]
+
+            
+    aspect_ratios = [
+            [1., 2., 0.5],
+            [1., 2., 3., 0.5, 0.333],
+            [1., 2., 3., 0.5, 0.333],
+            [1., 2., 3., 0.5, 0.333],
+            [1., 2., 0.5],
+            [1., 2., 0.5]
+        ]
+    dboxes = []
+        
+        
+    for idx, fmap_size in enumerate(fmap_sizes):
+        for i in range(fmap_size):
+            for j in range(fmap_size):
+
+                # lưu ý, cx trong ảnh là trục hoành, do đó j + 0.5 chứ không phải i + 0.5
+                cx = (j + 0.5) / fmap_size
+                cy = (i + 0.5) / fmap_size
+
+                for aspect_ratio in aspect_ratios[idx]:
+                    scale = box_scales[idx]
+                    dboxes.append([cx, cy, scale*sqrt(aspect_ratio), scale/sqrt(aspect_ratio)])
+
+                    if aspect_ratio == 1:
+                        try:
+                            scale = sqrt(scale*box_scales[idx + 1])
+                        except IndexError:
+                            scale = 1.
+                        dboxes.append([cx, cy, scale*sqrt(aspect_ratio), scale/sqrt(aspect_ratio)])
+
+    dboxes = torch.FloatTensor(dboxes)
+        
+    #dboxes = pascalVOC_style(dboxes)
+    dboxes.clamp_(min=0, max=1)
+     #dboxes = yolo_style(dboxes)
+                
+    return dboxes
+
 def live_cam(model, cam, size=300, num_classes=21, mapping = VOC_idx2name):
     model.to("cuda")
-    dboxes = model.create_prior_boxes().to("cuda")
+    dboxes = create_prior_boxes().to("cuda")
     d = deque()
 
     while cv2.waitKey(1) != ord('q'):
