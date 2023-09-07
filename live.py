@@ -41,12 +41,12 @@ def live_cam(model, cam, size=300, num_classes=21, mapping = VOC_idx2name):
         cv2.imshow("img", img)
 
 if __name__ == "__main__":
-    pretrain_path = r"H:\project_WPD\iteration_30000.pth"
+    pretrain_path = r"C:\Users\eguit\Documents\iteration_120000_SSD300_77.2.pth"
     n_classes     = 21
 
-    model = FPN_SSD300(pretrain_path, n_classes=n_classes)
-    #model = SSD512(pretrain_path, n_classes=n_classes)
+    #model = FPN_SSD300(pretrain_path, n_classes=n_classes)
+    model = SSD300(pretrain_path, n_classes=n_classes)
     model.eval()
 
     cam   = cv2.VideoCapture(0)
-    live_cam(model, cam, size=512)
+    live_cam(model, cam, size=300)
