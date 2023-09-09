@@ -14,7 +14,7 @@ def warmup_learning_rate(optimizer, epoch, lr):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr_init + (lr - lr_init)*epoch/5
 
-def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000), warm_up_schedule=None, max_iter=200000):
+def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000), max_iter=200000):
     torch.backends.cudnn.benchmark = True
     model.to("cuda")
     dboxes = model.create_prior_boxes().to("cuda")
@@ -25,7 +25,7 @@ def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(8000
             iteration += 1
             t_batch = time.time()
 
-            epoch = iteration/len(dataloader)
+            epoch = iteration/117266
 
             if epoch <= 5:
                 warmup_learning_rate(optimizer=optimizer, lr=1e-3 , epoch=epoch)
@@ -67,6 +67,7 @@ def train_on_COCO(size=300, version = "original", pretrain_path=None):
     train      = COCOUtils(train_folder_path, train_file).make_dataset(phase="train", transform=CustomAugmentation(size=size))
     val35k     = COCOUtils(val35k_folder_path, val35k_file).make_dataset(phase="train", transform=CustomAugmentation(size=size))
     dataset    = data.ConcatDataset([train, val35k])
+    print(len(dataset))
     dataloader = data.DataLoader(dataset, 32, True, collate_fn=COCO_collate_fn, num_workers=6, pin_memory=True)
 
     if version == "original":
@@ -112,6 +113,7 @@ def train_on_VOC(size=300, version="original", pretrain_path=None):
 def train_on_SOHAS(size=300, version="original", pretrain_path=None):
     data_folder_path = r"H:\data"
     dataset = SOHAS_dataset(data_folder_path, r'train', CustomAugmentation(size=size), phase='train')
+    print(len(dataset))
 
     dataloader       = data.DataLoader(dataset, 32, True, num_workers=1, collate_fn=collate_fn, pin_memory=True)
 
@@ -147,11 +149,10 @@ if __name__ == "__main__":
     #model = augFPN_SSD300(n_classes=21)
     #########################################################
 
-    pretrain_path = r"H:\checkpoint\iteration_120000_b_78.29.pth"
-    #623pretrain_path = None
-    dataloader, model, criterion = train_on_VOC(version="FPN", size=300, pretrain_path=pretrain_path)
+    #pretrain_path = r"H:\checkpoint\iteration_120000_b_78.29.pth"
+    pretrain_path = None
+    dataloader, model, criterion = train_on_COCO(version="FPN", size=300, pretrain_path=pretrain_path)
     #dataloader, model, criterion = train_on_COCO()
-
     biases     = []
     not_biases = []
     for param_name, param in model.named_parameters():
@@ -163,4 +164,4 @@ if __name__ == "__main__":
 
     optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
-    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(40000, 50000), max_iter=600000)
+    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(160000, 200000, 240000), max_iter=300000)

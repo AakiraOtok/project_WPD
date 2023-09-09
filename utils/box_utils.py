@@ -77,6 +77,13 @@ def yolo_style(boxes):
     """
     return torch.cat(((boxes[:, :2] + boxes[:, 2:])/2, boxes[:, 2:] - boxes[:, :2]), dim=1)
 
+def coco_style(boxes):
+    """
+    Chuyển từ pascalVOC_style sang yolo_style : [xmin, ymin, xmax, ymax] -> [x, y, w, h]
+    :param boxes, tensor [nbox, 4]
+    """
+    return torch.cat((boxes[:, :2], boxes[:, 2:] - boxes[:, :2]), dim=1)
+
 # encode (giải thích trên hackmd)
 def encode_variance(dboxes, bboxes, variances=[0.1, 0.2]):
     return torch.cat(((bboxes[:, :2] - dboxes[:, :2])/(dboxes[:, 2:]*variances[0]), 
