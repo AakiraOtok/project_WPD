@@ -67,7 +67,6 @@ def train_on_COCO(size=300, version = "original", pretrain_path=None):
     train      = COCOUtils(train_folder_path, train_file).make_dataset(phase="train", transform=CustomAugmentation(size=size))
     val35k     = COCOUtils(val35k_folder_path, val35k_file).make_dataset(phase="train", transform=CustomAugmentation(size=size))
     dataset    = data.ConcatDataset([train, val35k])
-    print(len(dataset))
     dataloader = data.DataLoader(dataset, 32, True, collate_fn=COCO_collate_fn, num_workers=6, pin_memory=True)
 
     if version == "original":
