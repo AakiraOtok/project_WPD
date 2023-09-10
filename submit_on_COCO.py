@@ -17,7 +17,7 @@ def get_img_dict(ann_path):
 if __name__ == "__main__":
     data_folder_path = r"H:\data\COCO\test2017"
     ann_path         = r"H:\data\COCO\image_info_test-dev2017.json"
-    pretrain_path    = r"H:\checkpoint\iteration_400000_b_46.27.pth"
+    pretrain_path    = r"H:\projectWPD\VOC_checkpoint\iteration_300000.pth"
     result_file      = r"H:\checkpoint\result.json"
     num_classes      = 81
 

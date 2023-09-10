@@ -25,7 +25,7 @@ def train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(8000
             iteration += 1
             t_batch = time.time()
 
-            epoch = iteration/117266
+            epoch = iteration/16551
 
             if epoch <= 5:
                 warmup_learning_rate(optimizer=optimizer, lr=1e-3 , epoch=epoch)
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
     #pretrain_path = r"H:\checkpoint\iteration_120000_b_78.29.pth"
     pretrain_path = None
-    dataloader, model, criterion = train_on_COCO(version="FPN", size=300, pretrain_path=pretrain_path)
+    dataloader, model, criterion = train_on_VOC(version="FPN", size=300, pretrain_path=pretrain_path)
     #dataloader, model, criterion = train_on_COCO()
     biases     = []
     not_biases = []
@@ -163,4 +163,4 @@ if __name__ == "__main__":
 
     optimizer  = optim.SGD(params=[{'params' : biases, 'lr' : 2 * 1e-3}, {'params' : not_biases}], lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
-    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(160000, 200000, 240000), max_iter=300000)
+    train_model(dataloader, model, criterion, optimizer, adjustlr_schedule=(80000, 100000), max_iter=120000)
