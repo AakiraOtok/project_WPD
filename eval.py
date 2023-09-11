@@ -167,8 +167,6 @@ def calc_APs(model, dataset, threshold=0.5, num_classes=21):
             #APs[cur_class] = torch.trapz(precision, recall)
             APs[cur_class] = voc_ap(recall, precision)
             
-            print(torch.sum(TP[cur_class]))
-            print(torch.sum(FP[cur_class]))
             #plt.plot(recall.detach().cpu().numpy(), precision.detach().cpu().numpy())
             #plt.show()
 
@@ -231,25 +229,57 @@ def eval_on_VEDAI(pretrain_path, foldfile,version="original", size=300):
     
     return dataset, model
 
+fold_list = ["fold01", "fold02", "fold03", "fold04", "fold05", "fold06", "fold07", "fold08", "fold09", "fold10"]
+
 if __name__ == "__main__":
 
-    pretrain_path = r"E:\tt\{}_{}.pth"
+    #pretrain_path = r"E:\checkpoint\{}_{}.pth"
+    #size          = 300
+    #num_classes   = 12 
+    #foldfile      = "fold06" 
+    #ckpt          = "45000"
+    #dataset, model = eval_on_VEDAI(pretrain_path.format(foldfile, ckpt), foldfile, version="FPN", size=size)
+
+    #model.eval()
+
+    #APs = calc_APs(model, dataset, num_classes=num_classes)
+    ##APs = APs[1:] # bỏ background
+    #print(APs)
+    #total = 0.
+    #for i in range(1, 5):
+        #total += APs[i]
+    #for i in range(7, 12):
+        #total += APs[i]
+
+    #print(total/9)
+    ##print(APs.mean())
+
+    pretrain_path = r"E:\remain\{}.pth"
     size          = 300
     num_classes   = 12 
-    foldfile      = "fold10" 
-    ckpt          = "44000"
-    dataset, model = eval_on_VEDAI(pretrain_path.format(foldfile, ckpt), foldfile, version="FPN", size=size)
 
-    model.eval()
+    AP_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    AP_t    = 0
 
-    APs = calc_APs(model, dataset, num_classes=num_classes)
-    #APs = APs[1:] # bỏ background
-    print(APs)
-    total = 0.
-    for i in range(1, 5):
-        total += APs[i]
-    for i in range(7, 12):
-        total += APs[i]
+    for fold_file in fold_list:
+        dataset, model = eval_on_VEDAI(pretrain_path.format(fold_file), fold_file, version="FPN", size=size)
+        model.eval()
 
-    print(total/9)
-    #print(APs.mean())
+        APs = calc_APs(model, dataset, num_classes=num_classes)
+        #APs = APs[1:] # bỏ background
+        print(APs)
+        total = 0.
+        for i in range(1, 5):
+            total += APs[i]
+            AP_list[i] += APs[i]
+        for i in range(7, 12):
+            total += APs[i]
+            AP_list[i] += APs[i]
+
+        AP_t += total/9
+        #print(APs.mean())
+
+    for x in AP_list:
+        print(x/10)
+
+    print(AP_t/10)
