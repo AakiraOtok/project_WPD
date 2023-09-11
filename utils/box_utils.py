@@ -203,6 +203,12 @@ class MultiBoxLoss(nn.Module):
         conf_loss = F.cross_entropy(conf_p.view(-1, self.num_classes), labels_t.view(-1), reduction="none")
         conf_loss = conf_loss.view(batch_size, nbox)
 
+        #print(conf_loss.shape)
+        #print(pos_mask.shape)
+        #print(conf_loss[pos_mask].sum())
+        #sys.exit()
+        #print(pos_mask.any())
+        
         pos_loss_c          = conf_loss[pos_mask].sum()
         conf_loss           = conf_loss.clone()
 
