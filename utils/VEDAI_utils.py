@@ -1,12 +1,24 @@
 from utils.lib import *
 from utils.augmentations_utils import CustomAugmentation
-
+                
 ori_idx    = [0, 1, 2, 4, 5, 7, 8, 9, 10, 11, 23, 31]
 handle_idx = [0, 1, 2, 3, 4, 5, 6, 7,  8,  9, 10, 11]
 ori_idx2handle_idx = dict(zip([key for key in ori_idx], [value for value in handle_idx]))
 hanlde_idx2ori_idx = dict(zip([key for key in handle_idx], [value for value in ori_idx]))
 #name       = ['background', 'car', 'truck', 'tractor', 'camping', 'boat', 'motorcycle', 'bus', 'van']
 #VEDAI_idx2name = dict(zip([key for key in VEDAI_name2idx.values()], [value for value in VEDAI_name2idx.values()]))
+VEDAI_idx2name = {0  : 'background',
+                  1  : 'car', 
+                  2  : 'trucks',
+                  3  : 'tractor', 
+                  4  : 'camping car',
+                  5  : 'mbike',
+                  6  : 'bus', 
+                  7  : 'van', 
+                  8  : 'other' , 
+                  9  : 'pickup', 
+                  10 : 'boat',
+                  11 : 'plane'}
 
 file_list = ["fold01.txt", "fold02.txt", "fold03.txt", "fold04.txt", "fold05.txt", "fold06.txt", "fold07.txt", "fold08.txt", "fold09.txt", "fold10.txt"]
 file_test_list = ["fold01test.txt", "fold02test.txt", "fold03test.txt", "fold04test.txt", "fold05test.txt", "fold06test.txt", "fold07test.txt", "fold08test.txt", "fold09test.txt", "fold10test.txt"]

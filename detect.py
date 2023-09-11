@@ -4,8 +4,9 @@ from model.SSD512 import SSD512
 from model.FPN_SSD300_b import FPN_SSD300
 from model.FPN_SSD512 import FPN_SSD512
 from utils.VOC_utils import VOCUtils, VOC_idx2name, VOC_name2idx
-from utils.COCO_utils import COCOUtils, COCO_idx2name, COCO_name2idx
+#from utils.COCO_utils import COCOUtils, COCO_idx2name, COCO_name2idx
 from utils.SOHAS_utils import SOHAS_dataset, SOHAS_idx2name
+from utils.VEDAI_utils import VEDAI_Utils, VEDAI_idx2name
 from utils.box_utils import Non_Maximum_Suppression, draw_bounding_box
 from utils.augmentations_utils import CustomAugmentation
 
@@ -25,7 +26,7 @@ def detect(dataset, model, num_classes=21, mapping=VOC_idx2name):
         draw_bounding_box(origin_image, pred_bboxes, pred_labels, pred_confs, mapping)
         #cv2.imshow("img", origin_image)
         #cv2.waitKey()
-        cv2.imwrite(r"H:\project_WPD\img_model_1\_" + str(idx) + r".jpg", origin_image)
+        cv2.imwrite(r"E:\test_img\_" + str(idx) + r".jpg", origin_image)
         print("ok")
 
 def detect_on_COCO(pretrain_path, version = "original", size=300):
@@ -91,15 +92,36 @@ def detect_on_SOHAS(pretrain_path, version="original", size=300):
 
     return dataset, model, num_classes, mapping
 
+def detect_on_VEDAI(pretrain_path, version="original", size=300):
+    data_folder_path = r"E:\data"
+    dataset = VEDAI_Utils(data_folder_path).make_dataset(r"fold09test.txt", transform=CustomAugmentation(phase='valid'), phase='valid')
+
+    if version == "origin":
+        if size == 300:
+            model      = SSD300(pretrain_path=pretrain_path, data_train_on="COCO",n_classes=12)
+        elif size == 512:
+            model      = SSD512(pretrain_path=pretrain_path, data_train_on="COCO",n_classes=12)
+    elif version == "FPN":
+        if size == 300:
+            model      = FPN_SSD300(pretrain_path=pretrain_path, data_train_on="COCO", n_classes=12)
+        elif size == 512:
+            model      = FPN_SSD512(pretrain_path=pretrain_path, data_train_on="COCO", n_classes=12)
+
+
+    num_classes = 12
+    mapping     = VEDAI_idx2name
+
+    return dataset, model, num_classes, mapping
+
 
 if __name__ == "__main__":
     #pretrain_path = r"H:\checkpoint\iteration_400000_b_46.27.pth"
     #pretrain_path = r"H:\checkpoint\iteration_400000_c_42.26.pth"
-    pretrain_path = r"H:\projectWPD\VOC_checkpoint\iteration_10000.pth"
+    pretrain_path = r"E:\checkpoint\fold01_43000.pth"
     
     #dataset, model, num_classes, mapping = detect_on_VOC(pretrain_path, version="FPN", size=300)
     #dataset, model, num_classes, mapping = detect_on_COCO(pretrain_path, version="FPN", size=300)
-    dataset, model, num_classes, mapping = detect_on_SOHAS(pretrain_path, version="FPN", size=300)
+    dataset, model, num_classes, mapping = detect_on_VEDAI(pretrain_path, version="FPN", size=300)
     model.eval()
     
     detect(dataset, model, num_classes=num_classes, mapping=mapping)

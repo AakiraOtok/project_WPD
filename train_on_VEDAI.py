@@ -54,9 +54,9 @@ def train_model(dataloader, model, criterion, optimizer, len_data, file_save, ad
                 torch.save(model.state_dict(), r"E:\checkpoint\{}".format(file_save) + '_' + str(iteration + 1) + ".pth")
                 print("Saved model at iteration : {}".format(iteration + 1))
                 if iteration + 1 == max_iter:
-                    break
+                    return
 
-fold_list = ["fold01.txt", "fold02.txt", "fold03.txt", "fold04.txt", "fold05.txt", "fold06.txt", "fold07.txt", "fold08.txt", "fold09.txt", "fold10.txt"]
+fold_list = ["fold02.txt", "fold03.txt", "fold04.txt", "fold05.txt", "fold06.txt", "fold07.txt", "fold08.txt", "fold09.txt", "fold10.txt"]
 fold_test_list = ["fold01test.txt", "fold02test.txt", "fold03test.txt", "fold04test.txt", "fold05test.txt", "fold06test.txt", "fold07test.txt", "fold08test.txt", "fold09test.txt", "fold10test.txt"]
 
 if __name__ == "__main__":
