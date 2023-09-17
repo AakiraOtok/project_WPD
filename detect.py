@@ -115,13 +115,13 @@ def detect_on_VEDAI(pretrain_path, version="original", size=300):
 
 
 if __name__ == "__main__":
-    #pretrain_path = r"H:\checkpoint\iteration_400000_b_46.27.pth"
+    pretrain_path = r"C:\Users\eguit\Documents\iteration_120000_SSD300_77.2.pth"
     #pretrain_path = r"H:\checkpoint\iteration_400000_c_42.26.pth"
     #pretrain_path = r"E:\remain\fold02.pth"
     
-    #dataset, model, num_classes, mapping = detect_on_VOC(pretrain_path, version="FPN", size=300)
+    dataset, model, num_classes, mapping = detect_on_VOC(pretrain_path, version="SSD", size=300)
     #dataset, model, num_classes, mapping = detect_on_COCO(pretrain_path, version="FPN", size=300)
-    dataset, model, num_classes, mapping = detect_on_VEDAI(pretrain_path, version="FPN", size=300)
+    #dataset, model, num_classes, mapping = detect_on_VEDAI(pretrain_path, version="FPN", size=300)
     model.eval()
     
     detect(dataset, model, num_classes=num_classes, mapping=mapping)
