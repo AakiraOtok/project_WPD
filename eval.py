@@ -167,8 +167,6 @@ def calc_APs(model, dataset, threshold=0.5, num_classes=21):
             #APs[cur_class] = torch.trapz(precision, recall)
             APs[cur_class] = voc_ap(recall, precision)
             
-            print(torch.sum(TP[cur_class]))
-            print(torch.sum(FP[cur_class]))
             #plt.plot(recall.detach().cpu().numpy(), precision.detach().cpu().numpy())
             #plt.show()
 
@@ -205,7 +203,7 @@ def eval_on_COCO(pretrain_path, version="original", size=300):
 
 def eval_on_SOHAS(pretrain_path, version="original", size=300):
     data_folder_path = r"H:\data"
-    dataset = SOHAS_dataset(data_folder_path, r'train', CustomAugmentation(size=size), phase='valid')
+    dataset = SOHAS_dataset(data_folder_path, r'test', CustomAugmentation(size=size), phase='valid')
     if version == "original":
         if size==300:
             model = SSD300(pretrain_path, n_classes=7)
@@ -231,25 +229,21 @@ def eval_on_VEDAI(pretrain_path, foldfile,version="original", size=300):
     
     return dataset, model
 
+fold_list = ["fold01", "fold02", "fold03", "fold04", "fold05", "fold06", "fold07", "fold08", "fold09", "fold10"]
+
 if __name__ == "__main__":
 
-    pretrain_path = r"E:\tt\{}_{}.pth"
+    pretrain_path = r"E:\checkpoint\{}_{}.pth"
     size          = 300
-    num_classes   = 12 
-    foldfile      = "fold10" 
-    ckpt          = "44000"
-    dataset, model = eval_on_VEDAI(pretrain_path.format(foldfile, ckpt), foldfile, version="FPN", size=size)
+    num_classes   = 7 
+
+    dataset, model = eval_on_SOHAS(pretrain_path=pretrain_path, version="FPN", size=size)
 
     model.eval()
 
     APs = calc_APs(model, dataset, num_classes=num_classes)
     #APs = APs[1:] # bỏ background
     print(APs)
-    total = 0.
-    for i in range(1, 5):
-        total += APs[i]
-    for i in range(7, 12):
-        total += APs[i]
+    print(APs.mean())
 
-    print(total/9)
-    #print(APs.mean())
+

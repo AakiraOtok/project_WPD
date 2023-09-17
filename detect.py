@@ -26,7 +26,7 @@ def detect(dataset, model, num_classes=21, mapping=VOC_idx2name):
         draw_bounding_box(origin_image, pred_bboxes, pred_labels, pred_confs, mapping)
         #cv2.imshow("img", origin_image)
         #cv2.waitKey()
-        cv2.imwrite(r"E:\test_img\_" + str(idx) + r".jpg", origin_image)
+        cv2.imwrite(r"H:\test_img\_" + str(idx) + r".jpg", origin_image)
         print("ok")
 
 def detect_on_COCO(pretrain_path, version = "original", size=300):
@@ -94,7 +94,7 @@ def detect_on_SOHAS(pretrain_path, version="original", size=300):
 
 def detect_on_VEDAI(pretrain_path, version="original", size=300):
     data_folder_path = r"E:\data"
-    dataset = VEDAI_Utils(data_folder_path).make_dataset(r"fold09test.txt", transform=CustomAugmentation(phase='valid'), phase='valid')
+    dataset = VEDAI_Utils(data_folder_path).make_dataset(r"fold02test.txt", transform=CustomAugmentation(phase='valid'), phase='valid')
 
     if version == "origin":
         if size == 300:
@@ -117,11 +117,11 @@ def detect_on_VEDAI(pretrain_path, version="original", size=300):
 if __name__ == "__main__":
     #pretrain_path = r"H:\checkpoint\iteration_400000_b_46.27.pth"
     #pretrain_path = r"H:\checkpoint\iteration_400000_c_42.26.pth"
-    pretrain_path = r"E:\checkpoint\fold01_43000.pth"
+    pretrain_path = r"H:\checkpoint\iteration_118000.pth"
     
-    #dataset, model, num_classes, mapping = detect_on_VOC(pretrain_path, version="FPN", size=300)
+    dataset, model, num_classes, mapping = detect_on_VOC(pretrain_path, version="FPN", size=300)
     #dataset, model, num_classes, mapping = detect_on_COCO(pretrain_path, version="FPN", size=300)
-    dataset, model, num_classes, mapping = detect_on_VEDAI(pretrain_path, version="FPN", size=300)
+    #dataset, model, num_classes, mapping = detect_on_VEDAI(pretrain_path, version="FPN", size=300)
     model.eval()
     
     detect(dataset, model, num_classes=num_classes, mapping=mapping)
