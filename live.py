@@ -4,7 +4,7 @@ from model.SSD512 import SSD512
 from model.FPN_SSD300_b import FPN_SSD300
 from utils.box_utils import draw_bounding_box, Non_Maximum_Suppression
 from utils.VOC_utils import VOC_name2idx, VOC_idx2name
-from utils.augmentations_utils import CustomAugmentation
+from utils.live_aug_utils import CustomAugmentation
 from collections import deque
 
 def live_cam(model, cam, size=300, num_classes=21, mapping = VOC_idx2name):
@@ -17,9 +17,9 @@ def live_cam(model, cam, size=300, num_classes=21, mapping = VOC_idx2name):
         if not ret:
             break
 
-        aug = CustomAugmentation(size=size)
+        aug = CustomAugmentation(size=size, phase='valid')
     
-        transformed_img, _1, _2, _3 = aug(img, phase="valid")
+        transformed_img, _1, _2, _3 = aug(img, None, None, None, phase="valid")
         transformed_img        = torch.FloatTensor(transformed_img[:, :, (2, 1, 0)]).permute(2, 0, 1).contiguous().to("cuda")
 
         offset, conf = model(transformed_img.unsqueeze(0))
